@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electron', {
+  // Existing handlers
   openDirectory: () => ipcRenderer.invoke('open-directory'),
   analyzeProject: (projectId, path, includePatterns, excludePatterns) => 
     ipcRenderer.invoke('analyze-project', projectId, path, includePatterns, excludePatterns),
@@ -8,6 +9,17 @@ contextBridge.exposeInMainWorld('electron', {
   getProjects: () => ipcRenderer.invoke('get-projects'),
   setProjectPath: (id, path) => ipcRenderer.invoke('set-project-path', id, path),
   getProjectPatterns: (projectId) => ipcRenderer.invoke('get-project-patterns', projectId),
-  copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
   deleteProject: (projectId) => ipcRenderer.invoke('deleteProject', projectId),
+  copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
+  getFileStructure: (path, includePatterns, excludePatterns) => 
+    ipcRenderer.invoke('get-file-structure', path, includePatterns, excludePatterns),
+    
+  // New handlers for version management
+  createProjectVersion: (projectId, versionName) => 
+    ipcRenderer.invoke('create-project-version', projectId, versionName),
+  getProjectVersions: (projectId) => 
+    ipcRenderer.invoke('get-project-versions', projectId),
+  
+  updateProjectPatterns: (projectId, includePatterns, excludePatterns) => 
+    ipcRenderer.invoke('update-project-patterns', projectId, includePatterns, excludePatterns),
 });
