@@ -4,8 +4,9 @@
   "private": true,
   "main": "public/electron.js",
   "homepage": "./",
-  "author": "Your Name",
-  "description": "Workspace Text Analyzer",
+  "author": "sapn1s",
+  "license": "CC-BY-NC-4.0",
+  "description": "Workspace to text",
   "dependencies": {
     "@heroicons/react": "^2.1.5",
     "electron-store": "^10.0.0",
@@ -16,6 +17,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.0.1",
     "cross-env": "^7.0.3",
@@ -30,7 +32,7 @@
     "start": "concurrently \"cross-env BROWSER=none npm run react-start\" \"wait-on http://localhost:4000 && electron .\"",
     "react-start": "react-scripts start",
     "react-build": "react-scripts build",
-    "electron-build": "electron-builder --config.win.certificateFile= --config.win.certificatePassword= --publish=never",
+    "electron-build": "electron-builder --win portable",
     "build": "npm run react-build && npm run electron-build",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -45,5 +47,55 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "build": {
+    "appId": "com.sapn1s.workspace-to-text",
+    "productName": "WTT",
+    "copyright": "Copyright © 2024 sapn1s",
+    "asar": true,
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "sapn1s",
+        "repo": "workspace-to-text"
+      }
+    ],
+    "win": {
+      "target": ["portable"],
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WTT"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "assets/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "assets/icon.png",
+      "category": "Development"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sapn1s/workspace-to-text.git"
   }
 }

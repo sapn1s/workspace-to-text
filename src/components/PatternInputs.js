@@ -1,16 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { 
-  ChevronDownIcon, 
-  ChevronRightIcon, 
-  PlusIcon, 
-  XMarkIcon 
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  PlusIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 const ChipInput = ({ value, onChange, placeholder }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
-  
-  // Parse patterns from the value string
+
   const patterns = value ? value.split(',').filter(Boolean).map(p => p.trim()) : [];
 
   const addPattern = (pattern) => {
@@ -18,14 +17,12 @@ const ChipInput = ({ value, onChange, placeholder }) => {
     pattern.split(',').forEach(p => {
       if (p.trim()) newPatterns.add(p.trim());
     });
-    // Pass the string directly
     onChange(Array.from(newPatterns).join(','));
     setInputValue('');
   };
 
   const removePattern = (patternToRemove) => {
     const newPatterns = patterns.filter(p => p !== patternToRemove);
-    // Pass the string directly
     onChange(newPatterns.join(','));
   };
 
@@ -89,7 +86,8 @@ const ChipInput = ({ value, onChange, placeholder }) => {
 
 const PatternInputs = ({ includePatterns, excludePatterns, onIncludeChange, onExcludeChange }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  
+  const [isCommonExcludesExpanded, setIsCommonExcludesExpanded] = useState(true);
+
   const commonExcludes = [
     { pattern: '.git/**,.git', desc: 'Git repository files' },
     { pattern: 'node_modules/**,node_modules', desc: 'Node.js dependencies' },
@@ -109,12 +107,12 @@ const PatternInputs = ({ includePatterns, excludePatterns, onIncludeChange, onEx
   };
 
   return (
-    <div className="space-y-4 bg-gray-800 rounded-lg p-4">
-      <div 
-        className="flex items-center justify-between cursor-pointer"
+    <div className="space-y-4">
+      <div
+        className="flex items-center justify-between cursor-pointer py-2"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className="text-lg font-medium text-gray-200">Pattern Configuration</h3>
+        <h3 className="text-lg font-medium text-gray-200 select-none">Pattern Configuration</h3>
         {isExpanded ? (
           <ChevronDownIcon className="h-5 w-5 text-gray-400" />
         ) : (
@@ -147,29 +145,48 @@ const PatternInputs = ({ includePatterns, excludePatterns, onIncludeChange, onEx
               onChange={onExcludeChange}
               placeholder="Type a pattern and press Enter (e.g., .git, node_modules)"
             />
-            
-            <div className="mt-3">
-              <div className="text-xs font-medium text-gray-400 mb-2">Common Exclusions:</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {commonExcludes.map(({ pattern, desc }) => (
-                  <div 
-                    key={pattern}
-                    className="flex items-center justify-between bg-gray-700 rounded-md p-2 text-sm"
-                  >
-                    <div className="flex-grow">
-                      <div className="text-gray-200">{desc}</div>
-                      <div className="text-gray-400 text-xs font-mono">{pattern}</div>
-                    </div>
-                    <button
-                      onClick={() => handleAddPattern(pattern)}
-                      className="ml-2 p-1 hover:bg-gray-600 rounded-md"
-                      title="Add this pattern"
-                    >
-                      <PlusIcon className="h-4 w-4 text-blue-400" />
-                    </button>
-                  </div>
-                ))}
+
+            <div className="mt-3 border-t border-gray-700 pt-3">
+              <div
+                className="flex items-center justify-between cursor-pointer mb-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCommonExcludesExpanded(!isCommonExcludesExpanded);
+                }}
+              >
+                <div className="text-sm font-medium text-gray-300 select-none">Common Exclusions</div>
+                {isCommonExcludesExpanded ? (
+                  <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+                )}
               </div>
+
+              {isCommonExcludesExpanded && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {commonExcludes.map(({ pattern, desc }) => (
+                    <div
+                      key={pattern}
+                      className="flex items-center justify-between bg-gray-700 rounded-md p-2 text-sm"
+                    >
+                      <div className="flex-grow">
+                        <div className="text-gray-200">{desc}</div>
+                        <div className="text-gray-400 text-xs font-mono">{pattern}</div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddPattern(pattern);
+                        }}
+                        className="ml-2 p-1 hover:bg-gray-600 rounded-md"
+                        title="Add this pattern"
+                      >
+                        <PlusIcon className="h-4 w-4 text-blue-400" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

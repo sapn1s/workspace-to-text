@@ -1,70 +1,101 @@
-# Getting Started with Create React App
+# Workspace to Text (WTT)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+WTT is an Electron-based desktop application that converts your project workspace into text format for analysis, documentation, or AI model input. It provides intelligent file filtering, versioning, and pattern-based exclusions. More features to come in later versions.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- 🗂️ Interactive project explorer
+- 🔍 Pattern-based file inclusion/exclusion
+- 📋 Copy-to-clipboard functionality
+- 🔄 Project versioning support
+- 🌲 Visual file tree navigation
+- ⚡ Fast local processing
+- 🎯 Smart file type detection
+- 🚫 Built-in ignore patterns for common artifacts
+- 📝 Automatic `.gitignore` support
 
-### `npm start`
+## Installation
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Pre-built binaries for Windows, macOS, and Linux will be available for download soon.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+For development:
+```bash
+# Clone the repository
+git clone https://github.com/sapn1s/workspace-to-text.git
 
-### `npm test`
+# Install dependencies
+npm install
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# Start the development server
+npm start
+```
 
-### `npm run build`
+For a production build:
+```bash
+npm run build
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Usage
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. Create a new project
+2. Select your project directory
+3. Configure include/exclude patterns (optional)
+4. Click "Analyze" to generate text output
+5. Do whatever you need with the output e.g. passing to LLM
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Additional features:
+- Use the project explorer to view and manage files
+- Create versions to track different states of your codebase
+- `.gitignore` files in your projects are automatically respected
 
-### `npm run eject`
+### Pattern Examples
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Include specific files:
+```
+src/**/*.js
+*.tsx
+components/*.jsx
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Exclude common directories:
+```
+node_modules
+.git
+dist
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Development
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Prerequisites
 
-## Learn More
+- Node.js >= 18
+- npm >= 9
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Project Structure
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- `/src` - React application source
+- `/public` - Electron main process
+- `/scripts` - Build scripts
+- `/components` - React components
 
-### Code Splitting
+### Scripts
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- `npm start` - Start development server
+- `npm run react-start` - Start React development server
+- `npm run electron-build` - Build Electron application
+- `npm run build` - Full production build
 
-### Analyzing the Bundle Size
+## License
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+This software is dual-licensed:
 
-### Making a Progressive Web App
+1. For Non-Commercial Use: [Creative Commons Attribution-NonCommercial 4.0 International](http://creativecommons.org/licenses/by-nc/4.0/)
+2. For Commercial Use: All rights reserved by sapn1s. Contact for licensing.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Contributing
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
