@@ -20,6 +20,9 @@ module.exports = {
           600: '#2563eb',
           700: '#1d4ed8',
         },
+        yellow: {
+          400: '#facc15',
+        },
         // Updated excluded colors with more muted red tones
         excluded: {
           DEFAULT: '#a94442', // Muted dark red

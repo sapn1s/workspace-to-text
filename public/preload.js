@@ -11,8 +11,8 @@ contextBridge.exposeInMainWorld('electron', {
   getProjectPatterns: (projectId) => ipcRenderer.invoke('get-project-patterns', projectId),
   deleteProject: (projectId) => ipcRenderer.invoke('deleteProject', projectId),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
-  getFileStructure: (path, includePatterns, excludePatterns) => 
-    ipcRenderer.invoke('get-file-structure', path, includePatterns, excludePatterns),
+  getFileStructure: (path, includePatterns, excludePatterns, projectRoot) => 
+    ipcRenderer.invoke('get-file-structure', path, includePatterns, excludePatterns, projectRoot),
     
   // New handlers for version management
   createProjectVersion: (projectId, versionName) => 
@@ -22,4 +22,7 @@ contextBridge.exposeInMainWorld('electron', {
   
   updateProjectPatterns: (projectId, includePatterns, excludePatterns) => 
     ipcRenderer.invoke('update-project-patterns', projectId, includePatterns, excludePatterns),
+  updateFileExclusions: (projectPath, structure, includePatterns, excludePatterns, changedPattern) => 
+    ipcRenderer.invoke('updateFileExclusions', projectPath, structure, includePatterns, excludePatterns, changedPattern),
+
 });

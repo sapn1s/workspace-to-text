@@ -229,7 +229,7 @@ function App() {
               {/* Main Content */}
               <div className="flex gap-6 flex-col lg:flex-row">
                 {/* Left Sidebar */}
-                <div className="w-full lg:w-80 flex-shrink-0">
+                <div className="w-full lg:w-80 flex-shrink-0 h-[calc(100vh-12rem)]"> 
                   <ProjectExplorer
                     path={projectPath}
                     includePatterns={includePatterns}
