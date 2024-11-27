@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const { analyzeProject } = require('../../analyzer');
-const { getFolderStats } = require('../../fileUtils');
+const { getFolderStats } = require('../../utils/sizeUtils');
 const { projectState } = require('../../state/ProjectState');
 
 class AnalysisHandlers {
@@ -69,3 +69,4 @@ class AnalysisHandlers {
 }
 
 module.exports = { AnalysisHandlers };
+

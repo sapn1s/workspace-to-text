@@ -2,7 +2,7 @@
   "name": "workspace-to-text",
   "version": "1.1.0",
   "private": true,
-  "main": "public/electron.js",
+  "main": "./main.js",
   "homepage": "./",
   "author": "sapn1s",
   "license": "CC-BY-NC-4.0",
@@ -32,7 +32,7 @@
     "start": "concurrently \"cross-env BROWSER=none npm run react-start\" \"wait-on http://localhost:4000 && electron .\"",
     "react-start": "react-scripts start",
     "react-build": "react-scripts build",
-    "electron-build": "electron-builder --win portable",
+    "electron-build": "electron-builder -c.extraMetadata.main=main.js",
     "build": "npm run react-build && npm run electron-build",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -52,30 +52,21 @@
     "appId": "com.sapn1s.workspace-to-text",
     "productName": "WTT",
     "copyright": "Copyright © 2024 sapn1s",
-    "asar": true,
+    "files": [
+      "build/**/*",
+      "main.js",
+      "preload.js",
+      "public/electron/**/*"
+    ],
     "directories": {
       "buildResources": "assets",
       "output": "dist"
     },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "sapn1s",
-        "repo": "workspace-to-text"
-      }
-    ],
     "win": {
       "target": [
         "portable"
       ],
       "icon": "public/icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "WTT"
     },
     "mac": {
       "target": [

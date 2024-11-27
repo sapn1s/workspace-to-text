@@ -1,9 +1,8 @@
 const ignore = require('ignore');
 const path = require('path');
-const { DEFAULT_EXCLUDES } = require('./constants');
 const { FileUtils } = require('./FileUtils');
 const { PathUtils } = require('./PathUtils');
-const { DOT_FILE_EXCLUDES, CORE_EXCLUDES, GIT_EXCLUDES } = require('../constants');
+const { DOT_FILE_EXCLUDES, GIT_EXCLUDES } = require('../constants');
 
 class ExclusionManager {
     constructor(rootDir, excludePatterns, settings = {}) {

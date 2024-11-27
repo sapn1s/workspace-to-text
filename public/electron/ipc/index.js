@@ -20,3 +20,4 @@ function registerIpcHandlers(mainWindow) {
 }
 
 module.exports = { registerIpcHandlers };
+
