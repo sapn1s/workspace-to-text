@@ -1,33 +1,30 @@
 const path = require('path');
-const fs = require('fs');
+const fsSync = require('fs');
 const mime = require('mime-types');
 const { TEXT_EXTENSIONS, BINARY_EXTENSIONS } = require('./constants');
-const { promisify } = require('util');
-
-const readdirAsync = promisify(fs.readdir);
-const statAsync = promisify(fs.stat);
+const { getFolderStats } = require('./utils/sizeUtils');
 
 function normalizeRelativePath(fullPath, rootDir) {
-    // Always use forward slashes for consistency
     return path.relative(rootDir, fullPath).replace(/\\/g, '/');
 }
 
 function makePathRelative(pathToCheck) {
-    // Remove leading slashes and normalize separators
-    return pathToCheck.replace(/^[/\\]+/, '').replace(/\\/g, '/');
+    if (!pathToCheck) return '';
+    const pathStr = String(pathToCheck);
+    return pathStr
+        .replace(/^\.[\\/]+/, '')
+        .replace(/\\/g, '/')
+        .replace(/^\/+/, '')
+        .replace(/\/+$/, '');
 }
 
 function normalizeExcludePattern(pattern, rootPath) {
-    // Normalize to forward slashes
     pattern = pattern.trim().replace(/\\/g, '/');
-    
-    // Remove ./ prefix if present
     pattern = pattern.replace(/^\.\//, '');
     
     try {
         const fullPath = path.join(rootPath, pattern);
-        if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
-            // For directories, create both patterns
+        if (fsSync.existsSync(fullPath) && fsSync.statSync(fullPath).isDirectory()) {
             return [pattern, `${pattern}/*`];
         }
     } catch (error) {
@@ -52,12 +49,12 @@ function isTextFile(filePath) {
 
 function readGitignore(rootDir) {
     const gitignorePath = path.join(rootDir, '.gitignore');
-    if (fs.existsSync(gitignorePath)) {
-        return fs.readFileSync(gitignorePath, 'utf8')
+    if (fsSync.existsSync(gitignorePath)) {
+        return fsSync.readFileSync(gitignorePath, 'utf8')
             .split('\n')
             .map(line => line.trim())
             .filter(line => line && !line.startsWith('#'))
-            .map(line => line.replace(/\\/g, '/')); // Normalize separators
+            .map(line => line.replace(/\\/g, '/'));
     }
     return [];
 }
@@ -75,7 +72,7 @@ function getFileContent(filePath) {
         return '[Binary file not displayed]';
     }
     try {
-        return fs.readFileSync(filePath, 'utf8');
+        return fsSync.readFileSync(filePath, 'utf8');
     } catch (error) {
         return `Error reading file: ${error.message}`;
     }
@@ -84,14 +81,12 @@ function getFileContent(filePath) {
 function shouldInclude(relativePath, includePatterns) {
     if (!includePatterns) return true;
     
-    // Normalize path separators
     relativePath = relativePath.replace(/\\/g, '/');
     
     const patterns = includePatterns.split(',')
         .map(p => p.trim())
         .filter(p => p.length > 0)
         .map(pattern => {
-            // Escape special regex characters except * and ?
             const regexPattern = pattern
                 .replace(/[.+^${}()|[\]\\]/g, '\\$&')
                 .replace(/\*/g, '.*')
@@ -108,9 +103,8 @@ module.exports = {
     normalizePattern,
     normalizeExcludePattern,
     getFileContent,
-    readdirAsync,
-    statAsync,
     normalizeRelativePath,
     makePathRelative,
-    shouldInclude
+    shouldInclude,
+    getFolderStats // Re-exported from sizeUtils
 };

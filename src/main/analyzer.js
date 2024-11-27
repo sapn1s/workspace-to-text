@@ -1,11 +1,11 @@
 const path = require('path');
-const fs = require('fs');
+const fsSync = require('fs');
 const ignore = require('ignore');
-const { DEFAULT_EXCLUDES } = require('./constants');
-const { 
-    readGitignore, 
-    normalizePattern, 
-    getFileContent, 
+const { DOT_FILE_EXCLUDES, GIT_EXCLUDES } = require('./constants');
+const {
+    readGitignore,
+    normalizePattern,
+    getFileContent,
     isTextFile,
     normalizeRelativePath,
     makePathRelative,
@@ -14,11 +14,11 @@ const {
 
 function traverseDirectory(dir, level = 0, rootDir, ig, includePatterns) {
     let output = '';
-    const files = fs.readdirSync(dir);
+    const files = fsSync.readdirSync(dir);
 
     files.forEach(file => {
         const filePath = path.join(dir, file);
-        const stats = fs.statSync(filePath);
+        const stats = fsSync.statSync(filePath);
         const relativePath = normalizeRelativePath(filePath, rootDir);
         const pathForIgnore = makePathRelative(relativePath);
 
@@ -37,11 +37,11 @@ function traverseDirectory(dir, level = 0, rootDir, ig, includePatterns) {
 
 function getAllFilePaths(dir, rootDir, ig, includePatterns) {
     const results = [];
-    const files = fs.readdirSync(dir);
+    const files = fsSync.readdirSync(dir);
 
     files.forEach(file => {
         const filePath = path.join(dir, file);
-        const stats = fs.statSync(filePath);
+        const stats = fsSync.statSync(filePath);
         const relativePath = normalizeRelativePath(filePath, rootDir);
         const pathForIgnore = makePathRelative(relativePath);
 
@@ -57,15 +57,27 @@ function getAllFilePaths(dir, rootDir, ig, includePatterns) {
     return results;
 }
 
-function analyzeProject(rootDir, includePatterns, excludePatterns) {
-    const gitignoreRules = readGitignore(rootDir);
-    const ig = ignore().add(DEFAULT_EXCLUDES).add(gitignoreRules);
+function analyzeProject(rootDir, includePatterns, excludePatterns, { respectGitignore = true, ignoreDotfiles = true } = {}) {
+    const ig = ignore();
 
+    // Add gitignore rules if enabled
+    if (respectGitignore) {
+        const gitignoreRules = readGitignore(rootDir);
+        ig.add(gitignoreRules);
+        ig.add(GIT_EXCLUDES);
+    }
+
+    // Add dotfile excludes if enabled
+    if (ignoreDotfiles) {
+        ig.add(DOT_FILE_EXCLUDES);
+    }
+
+    // Add user-specified excludes
     if (excludePatterns) {
         const patterns = excludePatterns.split(',').map(normalizePattern);
         ig.add(patterns);
     }
-
+    
     let output = `Project path: ${rootDir}\n\n`;
     output += 'Directory Structure:\n';
     output += traverseDirectory(rootDir, 0, rootDir, ig, includePatterns);

@@ -7,7 +7,7 @@ let mainWindow;
 async function main() {
     try {
         await initDatabase();
-        mainWindow = await createWindow();
+        mainWindow = await createWindow(); // createWindow will handle IPC registration
     } catch (error) {
         console.error('Error starting application:', error);
         app.quit();

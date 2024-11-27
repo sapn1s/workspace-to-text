@@ -14,6 +14,9 @@ async function createWindow() {
         }
     });
 
+    // Register handlers with mainWindow reference
+    registerIpcHandlers(mainWindow);
+
     mainWindow.loadURL(
         !app.isPackaged
             ? 'http://localhost:4000'
@@ -27,8 +30,6 @@ async function createWindow() {
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
-
-    registerIpcHandlers(mainWindow);
 
     return mainWindow;
 }

@@ -1,20 +1,3 @@
-const DEFAULT_EXCLUDES = [
-    '/.git/**',
-    '/.git',
-    '/node_modules/**',
-    '/node_modules',
-    '/.next/**',
-    '/.next',
-    '/build/**',
-    '/build',
-    '/dist/**',
-    '/dist',
-    '/.vscode/**',
-    '/.vscode',
-    '/.idea/**',
-    '/.idea'
-];
-
 const TEXT_EXTENSIONS = new Set([
     'txt', 'js', 'jsx', 'ts', 'tsx', 'md', 'json', 'yml',
     'yaml', 'css', 'scss', 'less', 'html', 'xml', 'svg',
@@ -33,6 +16,40 @@ const BINARY_EXTENSIONS = new Set([
     'dll', 'exe', 'so', 'dylib'
 ]);
 
-exports.DEFAULT_EXCLUDES = DEFAULT_EXCLUDES;
-exports.TEXT_EXTENSIONS = TEXT_EXTENSIONS;
-exports.BINARY_EXTENSIONS = BINARY_EXTENSIONS;
+const DOT_FILE_EXCLUDES = [
+    '.*',
+    '.*/**'
+];
+
+const GIT_EXCLUDES = [
+    '/.git/**',
+    '/.git'
+];
+
+const SIZE_LIMITS = {
+    FOLDER_FILE_COUNT: 500,    // Maximum number of files in a folder
+    FILE_SIZE_MB: 1,          // Maximum size for a single text file in MB
+    TOTAL_SIZE_MB: 50         // Maximum total size of all text files in MB
+};
+
+const COMMON_LARGE_DIRECTORIES = [
+    'node_modules',
+    'dist',
+    'build',
+    '.git',
+    'vendor',        // Common for PHP/Composer
+    'target',        // Common for Java/Maven
+    'packages',      // Common for monorepos
+    '.next',         // Next.js build output
+    'coverage',      // Test coverage reports
+    'public/assets', // Built assets
+];
+
+module.exports = {
+    TEXT_EXTENSIONS,
+    BINARY_EXTENSIONS,
+    DOT_FILE_EXCLUDES,
+    GIT_EXCLUDES,
+    SIZE_LIMITS,
+    COMMON_LARGE_DIRECTORIES
+};

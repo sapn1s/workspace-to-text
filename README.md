@@ -1,24 +1,51 @@
 # Workspace to Text (WTT)
 
-WTT is an Electron-based desktop application that converts your project workspace into text format for analysis, documentation, or AI model input. It provides intelligent file filtering, versioning, and pattern-based exclusions. More features to come in later versions.
+A desktop application that converts your project workspace into formatted text output, ideal for documentation, analysis, or AI model input. WTT provides intelligent file filtering, project versioning, and a visual file explorer to help you manage and analyze your codebase.
 
-## Features
+## 📸 Screenshots
 
-- 🗂️ Interactive project explorer
-- 🔍 Pattern-based file inclusion/exclusion
-- 📋 Copy-to-clipboard functionality
-- 🔄 Project versioning support
-- 🌲 Visual file tree navigation
-- ⚡ Fast local processing
-- 🎯 Smart file type detection
-- 🚫 Built-in ignore patterns for common artifacts
-- 📝 Automatic `.gitignore` support
+### Main Projects Page
+![Main Projects Page](screenshots/main-page.png)
 
-## Installation
+### Project Explorer and Analysis
+![Project View](screenshots/project-view.png)
 
-Pre-built binaries for Windows, macOS, and Linux will be available for download soon.
+### Size Warning Dialog
+![Size Warning](screenshots/size-warning.png)
 
-For development:
+## ✨ Features
+
+- 🗂️ **Project Management**
+  - Create and manage multiple projects
+  - Version control for projects with named snapshots
+  - Project-specific settings and configurations
+
+- 📁 **File Explorer**
+  - Interactive file tree visualization
+  - Real-time directory scanning
+  - Context menu for quick actions
+  - Visual indicators for excluded files/folders
+
+- 🔍 **Smart Filtering**
+  - Pattern-based file inclusion/exclusion
+  - Built-in common exclusion patterns
+  - `.gitignore` integration
+  - Dot-files handling
+
+- ⚡ **Performance & Safety**
+  - Size limit warnings for large projects
+  - Intelligent file type detection
+  - Directory size analysis
+  - Memory usage optimization
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js >= 18
+- npm >= 9
+
+### Installation
+
 ```bash
 # Clone the repository
 git clone https://github.com/sapn1s/workspace-to-text.git
@@ -26,76 +53,65 @@ git clone https://github.com/sapn1s/workspace-to-text.git
 # Install dependencies
 npm install
 
-# Start the development server
+# Start development
 npm start
-```
 
-For a production build:
-```bash
+# Build for production
 npm run build
 ```
 
-## Usage
+## 💡 Usage
 
-1. Create a new project
-2. Select your project directory
-3. Configure include/exclude patterns (optional)
-4. Click "Analyze" to generate text output
-5. Do whatever you need with the output e.g. passing to LLM
+1. **Create a Project**
+   - Click the "New project" input field
+   - Enter a project name
+   - Press Enter or click the plus icon
 
-Additional features:
-- Use the project explorer to view and manage files
-- Create versions to track different states of your codebase
-- `.gitignore` files in your projects are automatically respected
+2. **Configure Project**
+   - Select your project folder
+   - Configure project settings:
+     - Respect `.gitignore`
+     - Ignore dot files
+   - Set include/exclude patterns
 
-### Pattern Examples
+3. **Pattern Configuration**
+   Include specific files:
+   ```
+   src/**/*.js
+   *.tsx
+   components/*.jsx
+   ```
+   
+   Exclude directories/files:
+   ```
+   node_modules
+   .git
+   dist
+   ```
 
-Include specific files:
-```
-src/**/*.js
-*.tsx
-components/*.jsx
-```
+4. **Version Management**
+   - Create versions to track different states
+   - Switch between versions
+   - Each version maintains its own settings
 
-Exclude common directories:
-```
-node_modules
-.git
-dist
-```
+5. **Analysis**
+   - Click "Analyze" to process your workspace
+   - Review size warnings if applicable
+   - Copy output to clipboard
+   - Pass the output to LLM or whatever is your usecase
 
-## Development
+## ⚙️ Settings
 
-### Prerequisites
+### File Types
+The application automatically detects and processes common text file types including:
+- Source code (.js, .jsx, .ts, .tsx, etc.)
+- Configuration files (.json, .yml, .env, etc.)
+- Documentation (.md, .txt)
+- Web files (.html, .css, .svg)
 
-- Node.js >= 18
-- npm >= 9
-
-### Project Structure
-
-- `/src` - React application source
-- `/public` - Electron main process
-- `/scripts` - Build scripts
-- `/components` - React components
-
-### Scripts
-
-- `npm start` - Start development server
-- `npm run react-start` - Start React development server
-- `npm run electron-build` - Build Electron application
-- `npm run build` - Full production build
-
-## License
+## 📄 License
 
 This software is dual-licensed:
 
 1. For Non-Commercial Use: [Creative Commons Attribution-NonCommercial 4.0 International](http://creativecommons.org/licenses/by-nc/4.0/)
-2. For Commercial Use: All rights reserved by sapn1s. Contact for licensing.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+2. For Commercial Use: All rights reserved. Contact sapn1s for licensing.

@@ -21,10 +21,10 @@ const ProjectExplorer = ({
       const fileStructure = await window.electron.getFileStructure(
         path,
         includePatterns,
-        excludePatterns
+        excludePatterns,
+        path // Pass the root path to help identify the project
       );
       setStructure(fileStructure);
-      // Trigger force expand when we get initial structure
       setForceExpand(true);
     } catch (error) {
       console.error('Error loading file structure:', error);
@@ -41,7 +41,6 @@ const ProjectExplorer = ({
       setIsRefreshing(false);
     }
   }, [path, includePatterns, excludePatterns]);
-
   // Initial load
   useEffect(() => {
     loadFileStructure();

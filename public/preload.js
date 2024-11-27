@@ -1,28 +1,39 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { ipcRenderer, contextBridge } = require('electron');
 
-contextBridge.exposeInMainWorld('electron', {
-  // Existing handlers
-  openDirectory: () => ipcRenderer.invoke('open-directory'),
-  analyzeProject: (projectId, path, includePatterns, excludePatterns) => 
-    ipcRenderer.invoke('analyze-project', projectId, path, includePatterns, excludePatterns),
-  createProject: (name) => ipcRenderer.invoke('create-project', name),
-  getProjects: () => ipcRenderer.invoke('get-projects'),
-  setProjectPath: (id, path) => ipcRenderer.invoke('set-project-path', id, path),
-  getProjectPatterns: (projectId) => ipcRenderer.invoke('get-project-patterns', projectId),
-  deleteProject: (projectId) => ipcRenderer.invoke('deleteProject', projectId),
-  copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
-  getFileStructure: (path, includePatterns, excludePatterns, projectRoot) => 
-    ipcRenderer.invoke('get-file-structure', path, includePatterns, excludePatterns, projectRoot),
+const ipcApi = {
+    // Project operations
+    createProject: (name) => ipcRenderer.invoke('project:create', name),
+    getProjects: () => ipcRenderer.invoke('project:list'),
+    setProjectPath: (id, path) => ipcRenderer.invoke('project:setPath', { id, path }),
+    deleteProject: (id) => ipcRenderer.invoke('project:delete', id),
+    getProjectSettings: (projectId) => ipcRenderer.invoke('project:getSettings', projectId),
+    getProjectPatterns: (projectId) => ipcRenderer.invoke('project:getPatterns', projectId),
+    updateProjectPatterns: (projectId, includePatterns, excludePatterns) =>
+        ipcRenderer.invoke('project:updatePatterns', { projectId, includePatterns, excludePatterns }),
+    createProjectVersion: (projectId, versionName) =>
+        ipcRenderer.invoke('project:createVersion', { projectId, versionName }),
+    getProjectVersions: (projectId) => ipcRenderer.invoke('project:getVersions', projectId),
     
-  // New handlers for version management
-  createProjectVersion: (projectId, versionName) => 
-    ipcRenderer.invoke('create-project-version', projectId, versionName),
-  getProjectVersions: (projectId) => 
-    ipcRenderer.invoke('get-project-versions', projectId),
-  
-  updateProjectPatterns: (projectId, includePatterns, excludePatterns) => 
-    ipcRenderer.invoke('update-project-patterns', projectId, includePatterns, excludePatterns),
-  updateFileExclusions: (projectPath, structure, includePatterns, excludePatterns, changedPattern) => 
-    ipcRenderer.invoke('updateFileExclusions', projectPath, structure, includePatterns, excludePatterns, changedPattern),
+    // Analysis operations
+    analyzeProject: (projectId, path, includePatterns, excludePatterns) => 
+        ipcRenderer.invoke('analysis:analyze', { projectId, path, includePatterns, excludePatterns }),
+    checkFolderSize: (path) => ipcRenderer.invoke('analysis:checkSize', path),
+    
+    // File system operations
+    openDirectory: () => ipcRenderer.invoke('fs:openDirectory'),
+    getFileStructure: (path, includePatterns, excludePatterns, projectRoot) => 
+        ipcRenderer.invoke('fs:getStructure', { path, includePatterns, excludePatterns, projectRoot }),
+    updateFileExclusions: (projectPath, structure, includePatterns, excludePatterns, changedPattern) =>
+        ipcRenderer.invoke('fs:updateExclusions', { projectPath, structure, includePatterns, excludePatterns, changedPattern }),
+    
+    // System operations
+    copyToClipboard: (text) => ipcRenderer.invoke('system:copyToClipboard', text),
+    
+    // Settings operations
+    getAppSetting: (key) => ipcRenderer.invoke('settings:get', key),
+    setAppSetting: (key, value) => ipcRenderer.invoke('settings:set', { key, value }),
+    updateProjectSettings: (projectId, settings) => 
+        ipcRenderer.invoke('settings:updateProject', { projectId, settings })
+};
 
-});
+contextBridge.exposeInMainWorld('electron', ipcApi);

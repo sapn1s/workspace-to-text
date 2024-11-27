@@ -11,6 +11,7 @@ export const FileTree = React.memo(({
   parentPath = '',
   excludePatterns = ''
 }) => {
+
   const [expanded, setExpanded] = useState({});
   const [loadedChildren, setLoadedChildren] = useState({});
   const [localStructure, setLocalStructure] = useState(structure);
@@ -21,13 +22,7 @@ export const FileTree = React.memo(({
     : pathUtils.join(parentPath, structure?.name || '');
 
   // First update localStructure with the incoming structure and computed fullPath
-  useEffect(() => {
-    console.log('Setting localStructure:', {
-      structure,
-      currentRelativePath,
-      path: structure?.path
-    });
-    
+  useEffect(() => {    
     setLocalStructure({
       ...structure,
       fullPath: currentRelativePath,
@@ -37,15 +32,6 @@ export const FileTree = React.memo(({
 
   // Then handle expansion based on the updated localStructure
   useEffect(() => {
-    console.log('FileTree mount/update:', {
-      level,
-      hasPath: !!localStructure?.path,
-      path: localStructure?.path,
-      currentRelativePath,
-      structure: localStructure
-    });
-
-    console.log("level", (level === 0), "path", (localStructure?.path==true))
     if (level === 0) {
       toggleFolder(currentRelativePath, true);
     }
@@ -67,13 +53,6 @@ export const FileTree = React.memo(({
   }, [localStructure, excludePatterns, basePath, currentRelativePath]);
 
   const toggleFolder = async (relativePath, forceReload = false) => {
-    console.log('Toggle folder called:', {
-      relativePath,
-      forceReload,
-      isRootLevel: level === 0,
-      expanded: expanded[relativePath]
-    });
-
     if (expanded[relativePath] && !forceReload) {
       setExpanded(prev => ({ ...prev, [relativePath]: false }));
       return;

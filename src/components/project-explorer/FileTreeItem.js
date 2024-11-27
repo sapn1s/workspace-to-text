@@ -16,16 +16,8 @@ export const FileTreeItem = ({
   containsExcludedItems = false,
   fullPath = ''
 }) => {
-
   const isFolder = item.type === 'folder';
-
-  console.log('FileTreeItem render:', { 
-    name: item.name, 
-    fullPath,
-    excluded: item.excluded, 
-    containsExcludedItems 
-  });
-
+  
   const handleClick = () => {
     if (isFolder) {
       onToggle(item.fullPath || item.path);
@@ -44,17 +36,17 @@ export const FileTreeItem = ({
     if (item.excluded) {
       return 'text-red-400';
     }
-    if (isFolder && containsExcludedItems) {
+    if (isFolder && containsExcludedItems && !item.excluded) {
       return 'text-yellow-400';
     }
-    return '';
+    return 'group-hover:text-gray-200';
   };
 
   const getIconStyle = () => {
     if (item.excluded) {
-      return 'text-red-400/70';
+      return 'text-red-400';
     }
-    if (isFolder && containsExcludedItems) {
+    if (isFolder && containsExcludedItems && !item.excluded) {
       return 'text-yellow-400';
     }
     return isFolder ? 'text-blue-400' : 'text-gray-300';
@@ -64,7 +56,7 @@ export const FileTreeItem = ({
     if (item.excluded) {
       return 'text-red-400/70';
     }
-    if (containsExcludedItems) {
+    if (containsExcludedItems && !item.excluded) {
       return 'text-yellow-400/70';
     }
     return 'text-gray-400';
@@ -72,7 +64,7 @@ export const FileTreeItem = ({
 
   return (
     <div 
-      className={`flex items-center py-1 px-2 hover:bg-gray-700 rounded cursor-pointer group ${getItemStyle()}`}
+      className={`flex items-center py-1 px-2 hover:bg-gray-700 rounded cursor-pointer group`}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
     >
@@ -89,7 +81,7 @@ export const FileTreeItem = ({
         ) : (
           <DocumentIcon className={`w-4 h-4 mr-2 ${getIconStyle()}`} />
         )}
-        <span className={`text-sm group-hover:text-gray-200 ${getItemStyle()}`}>
+        <span className={`text-sm ${getItemStyle()}`}>
           {item.name}
         </span>
         {item.error && (

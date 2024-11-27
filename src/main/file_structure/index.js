@@ -2,7 +2,7 @@ const path = require('path');
 const { DirectoryScanner } = require('./DirectoryScanner');
 const { PathUtils } = require('./PathUtils');
 
-async function getFileStructure(dirPath, includePatterns, excludePatterns, projectRoot = null) {
+async function getFileStructure(dirPath, includePatterns, excludePatterns, projectRoot = null, settings = {}) {
     try {
         let absolutePath = dirPath;
         if (!path.isAbsolute(dirPath) && projectRoot) {
@@ -10,7 +10,12 @@ async function getFileStructure(dirPath, includePatterns, excludePatterns, proje
         }
 
         const normalizedPath = path.normalize(absolutePath);
-        const scanner = new DirectoryScanner(normalizedPath, includePatterns, excludePatterns);
+        const scanner = new DirectoryScanner(
+            normalizedPath, 
+            includePatterns, 
+            excludePatterns,
+            settings
+        );
 
         return await scanner.scanDirectory(normalizedPath, projectRoot);
     } catch (error) {
@@ -29,7 +34,6 @@ async function getFileStructure(dirPath, includePatterns, excludePatterns, proje
 
 async function handleUpdateFileExclusions(projectPath, structure, includePatterns, excludePatterns, changedPattern) {
     try {
-        console.log('Updating file exclusions with pattern:', changedPattern);
         const scanner = new DirectoryScanner(projectPath, includePatterns, excludePatterns);
         return scanner.updateExclusionStates(structure, changedPattern);
     } catch (error) {

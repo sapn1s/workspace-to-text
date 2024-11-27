@@ -20,21 +20,21 @@ module.exports = {
           600: '#2563eb',
           700: '#1d4ed8',
         },
+        red: {
+          400: '#f87171',
+          500: '#ef4444',
+        },
         yellow: {
           400: '#facc15',
-        },
-        // Updated excluded colors with more muted red tones
-        excluded: {
-          DEFAULT: '#a94442', // Muted dark red
-          light: '#cc6666',   // Lighter red
-          dark: '#883333',    // Darker red
-          icon: '#b25f5f'     // Specific color for icons
         }
       },
     },
   },
   variants: {
-    extend: {},
+    extend: {
+      textColor: ['group-hover'],
+      backgroundColor: ['hover', 'group-hover'],
+    },
   },
   plugins: [],
 }

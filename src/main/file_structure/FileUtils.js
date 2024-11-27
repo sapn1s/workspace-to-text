@@ -15,7 +15,8 @@ class FileUtils {
                 return fs.readFileSync(gitignorePath, 'utf8')
                     .split('\n')
                     .map(line => line.trim())
-                    .filter(line => line && !line.startsWith('#'));
+                    .filter(line => line && !line.startsWith('#'))
+                    .map(line => line.replace(/\\/g, '/'));
             }
         } catch (error) {
             console.warn('Error reading .gitignore:', error);

@@ -29,18 +29,22 @@ const ProjectMenu = ({ project, onVersionCreated }) => {
     if (!newVersionName.trim()) return;
     
     try {
-      const newVersionId = await window.electron.createProjectVersion(project.id, newVersionName);
+      // For version creation, always use the main project's ID
+      const parentId = project.parent_id || project.id;
+      const newVersionId = await window.electron.createProjectVersion(parentId, newVersionName);
       setNewVersionName('');
       setIsCreatingVersion(false);
       setIsOpen(false);
       if (onVersionCreated) {
-        onVersionCreated(newVersionId);
+        await onVersionCreated(parentId, newVersionId);
       }
     } catch (error) {
       console.error('Failed to create version:', error);
     }
   };
   
+  if (!project || project.parent_id) return null
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -87,7 +91,7 @@ const ProjectMenu = ({ project, onVersionCreated }) => {
                 onClick={() => setIsCreatingVersion(true)}
                 className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
               >
-                Copy to New Version
+                Create New Version
               </button>
             )}
           </div>
