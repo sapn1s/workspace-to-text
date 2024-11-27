@@ -49,5 +49,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 [Unreleased]: https://github.com/sapn1s/workspace-to-text/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/sapn1s/workspace-to-text/compare/v1.0.0...v1.1.0
+[1.1.0]: https://github.com/sapn1s/workspace-to-text/releases/tag/v1.1.0
 [1.0.0]: https://github.com/sapn1s/workspace-to-text/releases/tag/v1.0.0

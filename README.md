@@ -5,13 +5,13 @@ A desktop application that converts your project workspace into formatted text o
 ## 📸 Screenshots
 
 ### Main Projects Page
-![Main Projects Page](screenshots/main-page.png)
+<img src="screenshots/main-page.png" width="600" alt="Main Projects Page"/>
 
 ### Project Explorer and Analysis
-![Project View](screenshots/project-view.png)
+<img src="screenshots/project-view.png" width="600" alt="Main Projects Page"/>
 
 ### Size Warning Dialog
-![Size Warning](screenshots/size-warning.png)
+<img src="screenshots/ize-warning.png" width="600" alt="Main Projects Page"/>
 
 ## ✨ Features
 
@@ -99,8 +99,6 @@ npm run build
    - Review size warnings if applicable
    - Copy output to clipboard
    - Pass the output to LLM or whatever is your usecase
-
-## ⚙️ Settings
 
 ### File Types
 The application automatically detects and processes common text file types including:
