@@ -11,7 +11,7 @@ A desktop application that converts your project workspace into formatted text o
 <img src="screenshots/project-view.png" width="600" alt="Main Projects Page"/>
 
 ### Size Warning Dialog
-<img src="screenshots/ize-warning.png" width="600" alt="Main Projects Page"/>
+<img src="screenshots/size-warning.png" width="600" alt="Main Projects Page"/>
 
 ## ✨ Features
 
