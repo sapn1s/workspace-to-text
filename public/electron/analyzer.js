@@ -59,6 +59,7 @@ function getAllFilePaths(dir, rootDir, ig, includePatterns) {
 
 function analyzeProject(rootDir, includePatterns, excludePatterns, { respectGitignore = true, ignoreDotfiles = true } = {}) {
     const ig = ignore();
+    const fileSizeData = []; // Array to store file size data
 
     // Add gitignore rules if enabled
     if (respectGitignore) {
@@ -86,11 +87,23 @@ function analyzeProject(rootDir, includePatterns, excludePatterns, { respectGiti
     const allFilePaths = getAllFilePaths(rootDir, rootDir, ig, includePatterns);
     allFilePaths.forEach(filePath => {
         output += `\n--- ${filePath} ---\n`;
-        output += getFileContent(path.join(rootDir, filePath));
+        const content = getFileContent(path.join(rootDir, filePath));
+        output += content;
         output += '\n';
+        
+        // Store file size data
+        fileSizeData.push({
+            path: filePath,
+            name: path.basename(filePath),
+            directory: path.dirname(filePath),
+            charCount: content.length
+        });
     });
 
-    return output;
+    return {
+        text: output,
+        fileSizeData
+    };
 }
 
 exports.analyzeProject = analyzeProject;

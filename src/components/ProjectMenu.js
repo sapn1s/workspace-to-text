@@ -29,21 +29,30 @@ const ProjectMenu = ({ project, onVersionCreated }) => {
     if (!newVersionName.trim()) return;
     
     try {
-      // For version creation, always use the main project's ID
-      const parentId = project.parent_id || project.id;
-      const newVersionId = await window.electron.createProjectVersion(parentId, newVersionName);
+      // Always create a version from the currently selected project/version
+      // This ensures we copy the settings from the current selection
+      const sourceId = project.id;
+      
+      // Create version based on the current project configuration
+      const newVersionId = await window.electron.createProjectVersion(sourceId, newVersionName);
+      
       setNewVersionName('');
       setIsCreatingVersion(false);
       setIsOpen(false);
+      
+      // Determine the main project ID for version listing 
+      const mainProjectId = project.parent_id || project.id;
+      
       if (onVersionCreated) {
-        await onVersionCreated(parentId, newVersionId);
+        await onVersionCreated(mainProjectId, newVersionId);
       }
     } catch (error) {
       console.error('Failed to create version:', error);
     }
   };
   
-  if (!project || project.parent_id) return null
+  // Allow version creation from any project or version
+  if (!project) return null;
 
   return (
     <div className="relative" ref={menuRef}>

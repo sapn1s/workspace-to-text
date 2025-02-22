@@ -32,6 +32,7 @@ function App() {
 
   const {
     result,
+    fileSizeData,
     isAnalyzing,
     isCheckingSize,
     showSizeWarning,
@@ -94,6 +95,7 @@ function App() {
               isAnalyzing={isAnalyzing}
               isCheckingSize={isCheckingSize}
               result={result}
+              fileSizeData={fileSizeData}
               onBack={() => setSelectedProject(null)}
               onFolderSelect={handleFolderSelect}
               onAnalyze={() => handleAnalyze(

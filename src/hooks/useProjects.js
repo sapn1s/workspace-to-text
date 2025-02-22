@@ -16,13 +16,38 @@ export function useProjects() {
   };
 
   const loadVersions = async (projectId) => {
-    if (!projectId) return;
+    if (!projectId) return [];
     try {
-      const mainProject = await window.electron.getProjects()
-        .then(projects => projects.find(p => p.id === projectId));
-      const projectVersions = await window.electron.getProjectVersions(projectId);
-      setVersions(mainProject ? [mainProject, ...projectVersions] : projectVersions);
-      return projectVersions;
+      console.log("Loading versions for project ID:", projectId);
+      
+      // First, determine if this is a version or main project
+      const allProjects = await window.electron.getProjects();
+      const project = allProjects.find(p => p.id === projectId);
+      
+      if (!project) {
+        console.warn("Project not found:", projectId);
+        return [];
+      }
+
+      // Get the main project ID (either the current ID or its parent)
+      const mainProjectId = project.parent_id || project.id;
+      console.log("Main project ID:", mainProjectId);
+      
+      // Get the main project
+      const mainProject = allProjects.find(p => p.id === mainProjectId);
+        
+      // Get all versions of this project
+      const projectVersions = await window.electron.getProjectVersions(mainProjectId);
+      console.log(`Found ${projectVersions.length} versions for project ${mainProjectId}`);
+      
+      if (mainProject) {
+        const allVersions = [mainProject, ...projectVersions];
+        setVersions(allVersions);
+        return allVersions;
+      } else {
+        setVersions(projectVersions);
+        return projectVersions;
+      }
     } catch (error) {
       console.error('Error loading versions:', error);
       setVersions([]);
@@ -38,6 +63,8 @@ export function useProjects() {
       if (freshProject) {
         setSelectedProject(freshProject);
         setProjectPath(freshProject.path || '');
+        
+        // Load versions based on parent_id if this is a version, or on the project's id if it's a main project
         await loadVersions(freshProject.parent_id || freshProject.id);
         return freshProject;
       }
@@ -55,6 +82,8 @@ export function useProjects() {
       if (freshVersion) {
         setSelectedProject(freshVersion);
         setProjectPath(freshVersion.path || '');
+        
+        // Load all versions of this project family
         const parentId = freshVersion.parent_id || freshVersion.id;
         await loadVersions(parentId);
       }
@@ -76,15 +105,30 @@ export function useProjects() {
     }
   };
 
-  const handleVersionCreated = async (parentId, newVersionId) => {
+  const handleVersionCreated = async (mainProjectId, newVersionId) => {
     try {
+      // Reload all projects to get the latest data
       await loadProjects();
-      const projectVersions = await loadVersions(parentId);
       
-      // Find and select the newly created version
-      const newVersion = projectVersions.find(v => v.id === newVersionId);
+      // Get the full list of projects
+      const allProjects = await window.electron.getProjects();
+      
+      // Find the newly created version directly
+      const newVersion = allProjects.find(p => p.id === newVersionId);
+      
       if (newVersion) {
-        await handleVersionSelect(newVersion);
+        console.log("Switching to newly created version:", newVersion);
+        
+        // Switch to the new version first
+        setSelectedProject(newVersion);
+        setProjectPath(newVersion.path || '');
+        
+        // Then load all versions of this project family
+        await loadVersions(mainProjectId);
+      } else {
+        console.error("Could not find newly created version with ID:", newVersionId);
+        // Reload the versions list as a fallback
+        await loadVersions(mainProjectId);
       }
     } catch (error) {
       console.error('Error handling version creation:', error);

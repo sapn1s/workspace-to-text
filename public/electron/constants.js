@@ -1,10 +1,52 @@
 const TEXT_EXTENSIONS = new Set([
-    'txt', 'js', 'jsx', 'ts', 'tsx', 'md', 'json', 'yml',
-    'yaml', 'css', 'scss', 'less', 'html', 'xml', 'svg',
-    'env', 'config', 'lock', 'map', 'vue', 'php', 'py',
-    'rb', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'go',
-    'rs', 'sql', 'sh', 'bash', 'conf', 'ini', 'gitignore',
-    'dockerignore', 'editorconfig', 'eslintrc', 'prettierrc'
+    // Web Development
+    'txt', 'js', 'jsx', 'ts', 'tsx', 'md', 'json', 'yml', 'yaml',
+    'css', 'scss', 'less', 'sass', 'styl', 'html', 'htm', 'xml', 'svg',
+    'vue', 'svelte', 'astro', 'liquid', 'pug', 'jade', 'ejs', 'hbs', 'handlebars',
+    'mjs', 'cjs', 'jsonc', 'webmanifest',
+
+    // Configuration Files
+    'env', 'config', 'lock', 'map', 'toml', 'ini', 'conf', 'cfg',
+    'properties', 'prefs', 'htaccess', 'htpasswd', 'nginx', 'service',
+    'gitignore', 'gitattributes', 'dockerignore', 'editorconfig',
+    'eslintrc', 'prettierrc', 'stylelintrc', 'babelrc', 'browserslistrc',
+    'npmrc', 'yarnrc', 'nvmrc',
+
+    // Programming Languages
+    'php', 'py', 'pyi', 'pyw', 'rb', 'rbw', 'java', 'class', 'c', 'cpp',
+    'cc', 'cxx', 'h', 'hpp', 'hh', 'hxx', 'cs', 'go', 'rs', 'rlib',
+    'swift', 'kt', 'kts', 'scala', 'sc', 'pl', 'pm', 'perl', 'r', 'm',
+    'mm', 'f', 'for', 'f90', 'f95', 'f03', 'sql', 'mysql', 'pgsql',
+    'lua', 'tcl', 'groovy', 'gradle', 'dart', 'ex', 'exs', 'erl', 'hrl',
+    'clj', 'cljs', 'cljc', 'edn', 'fs', 'fsx', 'fsi', 'fsscript',
+    'hs', 'lhs', 'elm', 'slim', 'haml', 'erb',
+
+    // Shell Scripts
+    'sh', 'bash', 'zsh', 'fish', 'command', 'bat', 'cmd', 'ps1', 'psm1',
+    'psd1', 'vbs', 'vbe', 'wsf', 'wsc',
+
+    // Documentation
+    'rst', 'rest', 'asciidoc', 'adoc', 'asc', 'creole', 'wiki', 'mediawiki',
+    'textile', 'rdoc', 'pod', 'man', 'mustache', 'nunjucks', 'njk',
+    'twig', 'csv', 'tsv', 'org',
+
+    // Build Systems & Package Managers
+    'gradle', 'rake', 'make', 'makefile', 'dockerfile', 'cabal',
+    'gemspec', 'podspec', 'gyp', 'gypi', 'cmake', 'ant',
+    'pom', 'maven', 'ivy', 'nimble', 'sbt',
+
+    // IDEs & Editors
+    'project', 'workspace', 'sublime-project', 'sublime-workspace',
+    'idea', 'iml', 'sln', 'suo', 'csproj', 'vbproj', 'vcxproj',
+    'code-workspace',
+
+    // Game Development
+    'gd', 'tscn', 'unity', 'prefab', 'mat', 'shader', 'hlsl', 'glsl',
+    'frag', 'vert', 'comp', 'metal',
+
+    // Data Formats
+    'graphql', 'gql', 'proto', 'avsc', 'thrift', 'prisma', 'apollo',
+    'neon', 'reg', 'manifest', 'l10n'
 ]);
 
 const BINARY_EXTENSIONS = new Set([

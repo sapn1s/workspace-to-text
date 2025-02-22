@@ -28,10 +28,12 @@ class AnalysisHandlers {
         [path, includePatterns || '', excludePatterns || '', projectId]
       );
 
-      return await analyzeProject(path, includePatterns, excludePatterns, {
+      const result = await analyzeProject(path, includePatterns, excludePatterns, {
         respectGitignore: Boolean(settings?.respect_gitignore),
         ignoreDotfiles: Boolean(settings?.ignore_dotfiles)
       });
+
+      return result; // Now returns both text and fileSizeData
     } catch (error) {
       console.error('Error analyzing project:', error);
       throw error;
@@ -69,4 +71,3 @@ class AnalysisHandlers {
 }
 
 module.exports = { AnalysisHandlers };
-

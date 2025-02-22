@@ -32,20 +32,27 @@ A desktop application that converts your project workspace into formatted text o
   - `.gitignore` integration
   - Dot-files handling
 
-- ⚡ **Performance & Safety**
+- 📊 **File Analysis**
+  - File size visualization and metrics
   - Size limit warnings for large projects
-  - Intelligent file type detection
+  - Comprehensive file type detection (100+ formats)
   - Directory size analysis
-  - Memory usage optimization
+
+- ⚡ **Performance & Safety**
+  - Intelligent memory usage optimization
+  - Tabbed interface for output and analysis
+  - Better handling of large codebases
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Node.js >= 18
-- npm >= 9
-
 ### Installation
 
+#### Windows
+- Download the installer (WTT-Setup-x.x.x.exe) from the [releases page](https://github.com/sapn1s/workspace-to-text/releases)
+- Run the installer and follow the prompts
+- Alternatively, download the portable version if you prefer not to install
+
+#### Development Setup
 ```bash
 # Clone the repository
 git clone https://github.com/sapn1s/workspace-to-text.git
@@ -57,7 +64,7 @@ npm install
 npm start
 
 # Build for production
-npm run build
+npm run electron-build
 ```
 
 ## 💡 Usage
@@ -97,15 +104,18 @@ npm run build
 5. **Analysis**
    - Click "Analyze" to process your workspace
    - Review size warnings if applicable
+   - Switch between output text and size analysis tabs
    - Copy output to clipboard
    - Pass the output to LLM or whatever is your usecase
 
 ### File Types
-The application automatically detects and processes common text file types including:
+The application automatically detects and processes over 100 text file types including:
 - Source code (.js, .jsx, .ts, .tsx, etc.)
 - Configuration files (.json, .yml, .env, etc.)
 - Documentation (.md, .txt)
 - Web files (.html, .css, .svg)
+- Game development files (.gd, .tscn, .unity)
+- And many more specialized formats
 
 ## 📄 License
 

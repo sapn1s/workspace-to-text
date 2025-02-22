@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 export function useAnalysis() {
   const [result, setResult] = useState('');
+  const [fileSizeData, setFileSizeData] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isCheckingSize, setIsCheckingSize] = useState(false);
   const [showSizeWarning, setShowSizeWarning] = useState(false);
@@ -32,22 +33,29 @@ export function useAnalysis() {
     } catch (error) {
       setIsCheckingSize(false);
       setResult(`Error: ${error.message}`);
+      setFileSizeData([]);
     }
   };
 
   const performAnalysis = async (projectId, projectPath, includePatterns, excludePatterns) => {
     setIsAnalyzing(true);
     setResult('Analyzing...');
+    setFileSizeData([]);
+    
     try {
-      const analysis = await window.electron.analyzeProject(
+      const analysisResult = await window.electron.analyzeProject(
         projectId,
         projectPath,
         includePatterns,
         excludePatterns
       );
-      setResult(analysis);
+      
+      // Handle the new result structure
+      setResult(analysisResult.text || '');
+      setFileSizeData(analysisResult.fileSizeData || []);
     } catch (error) {
       setResult(`Error: ${error.message}`);
+      setFileSizeData([]);
     } finally {
       setIsAnalyzing(false);
     }
@@ -55,6 +63,7 @@ export function useAnalysis() {
 
   return {
     result,
+    fileSizeData,
     isAnalyzing,
     isCheckingSize,
     showSizeWarning,

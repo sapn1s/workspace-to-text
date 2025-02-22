@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeftIcon, ClipboardIcon } from '@heroicons/react/24/outline';
 import ProjectMenu from './ProjectMenu';
 import ProjectVersionSelector from './ProjectVersionSelector';
 import ProjectExplorer from './ProjectExplorer';
 import { ProjectControls } from './ProjectControls';
 import AnalysisResultContainer from './AnalysisResultContainer';
+import FileSizeAnalyzer from './FileSizeAnalyzer';
 
 function ProjectView({
     project,
@@ -15,6 +16,7 @@ function ProjectView({
     isAnalyzing,
     isCheckingSize,
     result,
+    fileSizeData, // New prop for file size data
     onBack,
     onFolderSelect,
     onAnalyze,
@@ -23,6 +25,8 @@ function ProjectView({
     onVersionSelect,
     onVersionCreated
 }) {
+    const [activeTab, setActiveTab] = useState('output');
+
     return (
         <div className="space-y-4">
             {/* Header */}
@@ -78,20 +82,54 @@ function ProjectView({
                         onExcludeChange={onExcludeChange}
                     />
 
-                    {/* Analysis Result */}
-                    <div className="bg-gray-800 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-medium">Analysis Result:</h3>
+                    {/* Results Section */}
+                    <div className="bg-gray-800 rounded-lg overflow-hidden">
+                        {/* Tabs */}
+                        <div className="flex border-b border-gray-700">
                             <button
-                                onClick={() => window.electron.copyToClipboard(result)}
-                                className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                disabled={!result}
+                                className={`px-4 py-2 text-sm font-medium ${
+                                    activeTab === 'output' 
+                                    ? 'text-blue-400 border-b-2 border-blue-400' 
+                                    : 'text-gray-400 hover:text-gray-200'
+                                }`}
+                                onClick={() => setActiveTab('output')}
                             >
-                                <ClipboardIcon className="h-5 w-5 text-blue-500" />
+                                Output
                             </button>
+                            <button
+                                className={`px-4 py-2 text-sm font-medium ${
+                                    activeTab === 'analysis' 
+                                    ? 'text-blue-400 border-b-2 border-blue-400' 
+                                    : 'text-gray-400 hover:text-gray-200'
+                                }`}
+                                onClick={() => setActiveTab('analysis')}
+                                disabled={!result || fileSizeData?.length === 0}
+                            >
+                                Size Analysis
+                            </button>
+                            
+                            {/* Copy button - always visible */}
+                            <div className="ml-auto p-2">
+                                <button
+                                    onClick={() => window.electron.copyToClipboard(result)}
+                                    className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={!result}
+                                    title="Copy to clipboard"
+                                >
+                                    <ClipboardIcon className="h-5 w-5 text-blue-500" />
+                                </button>
+                            </div>
                         </div>
-                        <div className="h-[500px]">
-                            <AnalysisResultContainer result={result} />
+                        
+                        {/* Tab Content */}
+                        <div className="p-4">
+                            {activeTab === 'output' ? (
+                                <div className="h-[500px]">
+                                    <AnalysisResultContainer result={result} />
+                                </div>
+                            ) : (
+                                <FileSizeAnalyzer fileSizeData={fileSizeData} />
+                            )}
                         </div>
                     </div>
                 </div>

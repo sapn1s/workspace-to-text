@@ -144,32 +144,56 @@ class ProjectHandlers {
 
     async createProjectVersion({ projectId, versionName }) {
         try {
-            const parentProject = await this.db.getAsync(
+            console.log(`Creating version from project id: ${projectId} with name: ${versionName}`);
+            
+            // Get the source project to copy settings from (this is the currently selected version)
+            const sourceProject = await this.db.getAsync(
                 'SELECT * FROM projects WHERE id = ?',
                 [projectId]
             );
 
-            if (!parentProject) {
-                throw new Error(`Parent project with ID ${projectId} not found`);
+            if (!sourceProject) {
+                throw new Error(`Source project with ID ${projectId} not found`);
             }
 
-            if (parentProject.parent_id) {
-                throw new Error('Cannot create a version of a version');
+            // Determine the main project ID (to set as parent)
+            let mainProjectId;
+            if (sourceProject.parent_id) {
+                // If source is a version, use its parent as the main project
+                mainProjectId = sourceProject.parent_id;
+            } else {
+                // If source is already the main project, use its ID
+                mainProjectId = sourceProject.id;
             }
+
+            // Get the main project details for the name
+            const mainProject = await this.db.getAsync(
+                'SELECT name FROM projects WHERE id = ?',
+                [mainProjectId]
+            );
+
+            if (!mainProject) {
+                throw new Error(`Main project with ID ${mainProjectId} not found`);
+            }
+
+            console.log(`Creating new version with settings from source project ${sourceProject.id} (${sourceProject.version_name || 'main'}) 
+                        and linking to main project ${mainProjectId}`);
 
             return new Promise((resolve, reject) => {
                 this.db.run(
                     `INSERT INTO projects (
                         name, path, include_patterns, exclude_patterns, 
-                        parent_id, version_name
-                    ) VALUES (?, ?, ?, ?, ?, ?)`,
+                        parent_id, version_name, respect_gitignore, ignore_dotfiles
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
-                        parentProject.name,
-                        parentProject.path,
-                        parentProject.include_patterns,
-                        parentProject.exclude_patterns,
-                        projectId,
-                        versionName
+                        mainProject.name,
+                        sourceProject.path,
+                        sourceProject.include_patterns,
+                        sourceProject.exclude_patterns,
+                        mainProjectId, // Always link to the main project
+                        versionName,
+                        sourceProject.respect_gitignore,
+                        sourceProject.ignore_dotfiles
                     ],
                     function(err) {
                         if (err) reject(err);
@@ -185,9 +209,22 @@ class ProjectHandlers {
 
     async getProjectVersions(projectId) {
         try {
+            // First, ensure we're getting the main project ID
+            const project = await this.db.getAsync(
+                'SELECT id, parent_id FROM projects WHERE id = ?',
+                [projectId]
+            );
+            
+            if (!project) {
+                return [];
+            }
+            
+            // If this is a version, use its parent_id to find all versions
+            const mainProjectId = project.parent_id || project.id;
+            
             return await this.db.allAsync(
                 'SELECT * FROM projects WHERE parent_id = ? ORDER BY id DESC',
-                [projectId]
+                [mainProjectId]
             );
         } catch (error) {
             console.error('Error getting project versions:', error);

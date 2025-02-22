@@ -1,6 +1,6 @@
 {
   "name": "workspace-to-text",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "main": "./main.js",
   "homepage": "./",
@@ -64,9 +64,29 @@
     },
     "win": {
       "target": [
-        "portable"
+        "portable",
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": true,
+      "shortcutName": "WTT",
+      "artifactName": "WTT-Setup-${version}.${ext}",
+      "menuCategory": true,
+      "license": "LICENSE.md",
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerHeaderIcon": "public/icon.ico"
     },
     "mac": {
       "target": [
@@ -85,6 +105,11 @@
       ],
       "icon": "assets/icon.png",
       "category": "Development"
+    },
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
     }
   },
   "repository": {
