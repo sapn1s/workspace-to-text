@@ -33,6 +33,7 @@ jobs:
       
       - name: Extract changelog content
         id: extract_changelog
+        shell: bash  # Specify bash shell for this step
         run: |
           # Use grep and sed to extract the section for the current version from CHANGELOG.md
           VERSION=${GITHUB_REF#refs/tags/v}
