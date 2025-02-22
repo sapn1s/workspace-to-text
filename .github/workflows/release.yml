@@ -1,74 +1,64 @@
-name: Release
-
+name: Release with Signing and Changelog
 on:
   push:
     tags:
       - 'v*'
-
 jobs:
   build:
     runs-on: windows-latest
-
+    permissions:
+      contents: write
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Set up Node.js
+        with:
+          fetch-depth: 0  # This ensures we get the full history for changelog generation
+      
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
-
+          node-version: '18'
+          cache: 'npm'
+          
       - name: Install dependencies
         run: npm ci
-
-      - name: Build React App
+        
+      - name: Build React app
         run: npm run react-build
         env:
           CI: false
           
-      - name: Build Windows Apps
+      - name: Build and Sign Windows App
         run: npm run electron-build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract changelog content
-        id: extract_changelog
-        shell: bash  # Specify bash shell for this step
+          
+      - name: Generate Changelog
+        id: changelog
         run: |
-          # Use grep and sed to extract the section for the current version from CHANGELOG.md
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Extracting changelog for version $VERSION"
+          # Extract the version from the tag
+          $VERSION=${env:GITHUB_REF_NAME} -replace '^v',''
           
-          # Find the section for the current version and extract content until the next ## heading
-          CHANGELOG_CONTENT=$(awk -v ver="## [$VERSION]" 'BEGIN{flag=0} 
-            $0 ~ ver {flag=1; next} 
-            flag && /^## / {flag=0} 
-            flag {print}' CHANGELOG.md)
+          # Read CHANGELOG.md and extract the section for this version
+          $CHANGELOG = Get-Content -Path CHANGELOG.md -Raw
+          if ($CHANGELOG -match "(?ms)## \[\s*$VERSION\s*\].*?(?=## \[|$)") {
+            $CHANGELOG_SECTION = $Matches[0].Trim()
+            $CHANGELOG_SECTION | Out-File -FilePath changelog_section.txt -Encoding utf8
+            echo "::set-output name=exists::true"
+          } else {
+            echo "No changelog entry found for version $VERSION"
+            echo "::set-output name=exists::false"
+          }
+        shell: pwsh
           
-          # Escape newlines and set output variable with changelog content
-          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//'%'/'%25'}"
-          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/'%0A'}"
-          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\r'/'%0D'}"
-          
-          echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            dist/*.exe
-            dist/WTT-Setup*.exe
+          files: "dist/*.exe"
           draft: false
           prerelease: false
-          body: |
-            # Workspace to Text v${{ github.ref_name }}
-            
-            ${{ steps.extract_changelog.outputs.changelog_content }}
-            
-            ## Download
-            - **Installer**: WTT-Setup-${{ github.ref_name }}.exe
-            - **Portable**: WTT-${{ github.ref_name }}-x64.exe
+          body_path: ${{ steps.changelog.outputs.exists == 'true' && 'changelog_section.txt' || '' }}
+          generate_release_notes: ${{ steps.changelog.outputs.exists != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
