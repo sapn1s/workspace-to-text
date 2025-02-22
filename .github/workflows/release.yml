@@ -1,42 +1,73 @@
-# Add this step before the "Create Release" step
-- name: Extract changelog content
-  id: extract_changelog
-  run: |
-    # Use grep and sed to extract the section for the current version from CHANGELOG.md
-    VERSION=${GITHUB_REF#refs/tags/v}
-    echo "Extracting changelog for version $VERSION"
-    
-    # Find the section for the current version and extract content until the next ## heading
-    CHANGELOG_CONTENT=$(awk -v ver="## [$VERSION]" 'BEGIN{flag=0} 
-      $0 ~ ver {flag=1; next} 
-      flag && /^## / {flag=0} 
-      flag {print}' CHANGELOG.md)
-    
-    # Escape newlines and set output variable with changelog content
-    CHANGELOG_CONTENT="${CHANGELOG_CONTENT//'%'/'%25'}"
-    CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/'%0A'}"
-    CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\r'/'%0D'}"
-    
-    echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
-    echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
-    echo "EOF" >> $GITHUB_OUTPUT
+name: Release
 
-# Then update your Create Release step
-- name: Create Release
-  uses: softprops/action-gh-release@v1
-  with:
-    files: |
-      dist/*.exe
-      dist/WTT-Setup*.exe
-    draft: false
-    prerelease: false
-    body: |
-      # Workspace to Text v${{ github.ref_name }}
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React App
+        run: npm run react-build
+        env:
+          CI: false
+          
+      - name: Build Windows Apps
+        run: npm run electron-build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      ${{ steps.extract_changelog.outputs.changelog_content }}
-      
-      ## Download
-      - **Installer**: WTT-Setup-${{ github.ref_name }}.exe
-      - **Portable**: WTT-${{ github.ref_name }}-x64.exe
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract changelog content
+        id: extract_changelog
+        run: |
+          # Use grep and sed to extract the section for the current version from CHANGELOG.md
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Extracting changelog for version $VERSION"
+          
+          # Find the section for the current version and extract content until the next ## heading
+          CHANGELOG_CONTENT=$(awk -v ver="## [$VERSION]" 'BEGIN{flag=0} 
+            $0 ~ ver {flag=1; next} 
+            flag && /^## / {flag=0} 
+            flag {print}' CHANGELOG.md)
+          
+          # Escape newlines and set output variable with changelog content
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//'%'/'%25'}"
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/'%0A'}"
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\r'/'%0D'}"
+          
+          echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.exe
+            dist/WTT-Setup*.exe
+          draft: false
+          prerelease: false
+          body: |
+            # Workspace to Text v${{ github.ref_name }}
+            
+            ${{ steps.extract_changelog.outputs.changelog_content }}
+            
+            ## Download
+            - **Installer**: WTT-Setup-${{ github.ref_name }}.exe
+            - **Portable**: WTT-${{ github.ref_name }}-x64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
