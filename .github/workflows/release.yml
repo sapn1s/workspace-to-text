@@ -39,16 +39,28 @@ jobs:
         run: |
           # Extract the version from the tag
           $VERSION=${env:GITHUB_REF_NAME} -replace '^v',''
+          Write-Host "Extracting changelog for version: $VERSION"
           
-          # Read CHANGELOG.md and extract the section for this version
+          # Read CHANGELOG.md
           $CHANGELOG = Get-Content -Path CHANGELOG.md -Raw
-          if ($CHANGELOG -match "(?ms)## \[\s*$VERSION\s*\].*?(?=## \[|$)") {
+          
+          # Create a more specific regex pattern to match your changelog format
+          $PATTERN = "(?ms)## \[$VERSION\].*?(?=\r?\n## \[|\r?\n\[Unreleased\]|$)"
+          
+          if ($CHANGELOG -match $PATTERN) {
             $CHANGELOG_SECTION = $Matches[0].Trim()
+            Write-Host "Found changelog entry:"
+            Write-Host "--------------------"
+            Write-Host $CHANGELOG_SECTION
+            Write-Host "--------------------"
+            
+            # Save to file for the release
             $CHANGELOG_SECTION | Out-File -FilePath changelog_section.txt -Encoding utf8
-            echo "::set-output name=exists::true"
+            echo "changelog_file=changelog_section.txt" >> $env:GITHUB_OUTPUT
+            echo "changelog_found=true" >> $env:GITHUB_OUTPUT
           } else {
-            echo "No changelog entry found for version $VERSION"
-            echo "::set-output name=exists::false"
+            Write-Host "No changelog entry found for version $VERSION"
+            echo "changelog_found=false" >> $env:GITHUB_OUTPUT
           }
         shell: pwsh
           
@@ -58,7 +70,7 @@ jobs:
           files: "dist/*.exe"
           draft: false
           prerelease: false
-          body_path: ${{ steps.changelog.outputs.exists == 'true' && 'changelog_section.txt' || '' }}
-          generate_release_notes: ${{ steps.changelog.outputs.exists != 'true' }}
+          body_path: ${{ steps.changelog.outputs.changelog_found == 'true' && steps.changelog.outputs.changelog_file || '' }}
+          generate_release_notes: ${{ steps.changelog.outputs.changelog_found != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

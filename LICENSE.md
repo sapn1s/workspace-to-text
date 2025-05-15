@@ -1,32 +1,35 @@
+# LICENSE
+
+Source Available License
+
 Copyright (c) 2024 sapn1s
+Date: May 15, 2025
 
-This software is dual-licensed:
+## Terms and Conditions
 
-1. For Non-Commercial Use:
-Creative Commons Attribution-NonCommercial 4.0 International
-[Include rest of CC BY-NC license as before]
+1. **Grant of Rights**:
+   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to use, copy, modify, merge, and distribute the Software for NON-COMMERCIAL purposes only, subject to the following conditions:
 
-2. For Commercial Use:
-All commercial usage rights are reserved by sapn1s. For commercial licensing inquiries, please contact sapn1s.
+2. **Non-Commercial Use Limitation**:
+   "Non-Commercial Use" means any use that is NOT primarily intended for or directed toward commercial advantage or monetary compensation. The following are prohibited without explicit written permission from the copyright holder:
+   - Selling the Software or derivatives
+   - Including the Software in a commercial product or service
+   - Using the Software to provide paid services to others
+   - Using the Software within a business context to generate revenue
+   
+3. **Attribution**:
+   The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-# Creative Commons Attribution-NonCommercial 4.0 International
+4. **Modifications**:
+   If you modify the Software, you must clearly indicate that you have done so and include a notice describing the modifications.
 
-This work is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
+5. **Commercial Licensing**:
+   For commercial use rights, please contact the copyright holder.
 
-To view a copy of this license, visit http://creativecommons.org/licenses/by-nc/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+## Disclaimer
 
-## You are free to:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-* Share — copy and redistribute the material in any medium or format
-* Adapt — remix, transform, and build upon the material
+## Termination
 
-## Under the following terms:
-
-* Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
-* NonCommercial — You may not use the material for commercial purposes.
-
-## Notices:
-
-You do not have to comply with the license for elements of the material in the public domain or where your use is permitted by an applicable exception or limitation.
-
-No warranties are given. The license may not give you all of the permissions necessary for your intended use.
+Your rights under this license will terminate automatically if you fail to comply with any of its terms.
