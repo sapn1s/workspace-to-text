@@ -1,5 +1,4 @@
-import React from 'react';
-import { Dialog } from './Dialog';
+import { Dialog } from '../../../../components/common/Dialog';
 
 export function SizeWarningDialog({ sizeStats, onClose, onProceed }) {
   const formatSize = (sizeMB) => {

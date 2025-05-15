@@ -22,6 +22,53 @@ async function addColumnIfNotExists(db, table, column, type, defaultValue) {
     }
 }
 
+async function initModulesTables(db) {
+    // Create modules table
+    await db.runAsync(`
+        CREATE TABLE IF NOT EXISTS modules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )
+    `);
+
+    // Create module patterns table
+    await db.runAsync(`
+        CREATE TABLE IF NOT EXISTS module_patterns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            module_id INTEGER,
+            pattern TEXT NOT NULL,
+            FOREIGN KEY(module_id) REFERENCES modules(id) ON DELETE CASCADE
+        )
+    `);
+
+    // Create module dependencies table
+    await db.runAsync(`
+        CREATE TABLE IF NOT EXISTS module_dependencies (
+            parent_module_id INTEGER,
+            child_module_id INTEGER,
+            FOREIGN KEY(parent_module_id) REFERENCES modules(id) ON DELETE CASCADE,
+            FOREIGN KEY(child_module_id) REFERENCES modules(id) ON DELETE CASCADE,
+            PRIMARY KEY(parent_module_id, child_module_id)
+        )
+    `);
+
+    // Create version modules table
+    await db.runAsync(`
+        CREATE TABLE IF NOT EXISTS version_modules (
+            version_id INTEGER,
+            module_id INTEGER,
+            is_included BOOLEAN DEFAULT 1,
+            FOREIGN KEY(version_id) REFERENCES projects(id) ON DELETE CASCADE,
+            FOREIGN KEY(module_id) REFERENCES modules(id) ON DELETE CASCADE,
+            PRIMARY KEY(version_id, module_id)
+        )
+    `);
+}
+
 async function initDatabase() {
     return new Promise((resolve, reject) => {
         const dbPath = path.join(app.getPath('userData'), 'projects.sqlite');
@@ -56,6 +103,9 @@ async function initDatabase() {
                         value TEXT
                     );
                 `);
+
+                // Initialize modules tables
+                await initModulesTables(db);
 
                 resolve(db);
             } catch (error) {

@@ -3,11 +3,11 @@ import { ArrowsUpDownIcon } from '@heroicons/react/24/outline';
 import { 
   SizeLegend, 
   FolderTreeItem,
-} from './FileSizeComponents/SizeLegend';
+} from '../FileSizeComponents/SizeLegend';
 import { 
   buildFolderTree, 
   treeToArray 
-} from './FileSizeComponents/FileAnalysisUtils';
+} from '../FileSizeComponents/FileAnalysisUtils';
 
 // Main file size analyzer component
 export default function FileSizeAnalyzer({ fileSizeData = [] }) {

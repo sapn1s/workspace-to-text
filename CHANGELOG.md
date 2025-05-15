@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-05-15
+
+### Added
+- 🔍 **Enhanced Search Functionality**
+  - Project search in the main project list page
+  - Exclusion search for better pattern management
+
+- 💬 **Improved User Experience**
+  - Project deletion confirmation dialog for safer project management
+
+### Improved
+- 🏗️ **Frontend Architecture**
+  - Restructured frontend file organization
+  - Each page/component now has its own dedicated folder
+  - Better code maintainability and organization
+
+### Fixed
+- 🛠️ **Pattern Management**
+  - Temporarily hiding "include patterns" option due to functionality issues
+  - Note: Same functionality can be achieved using exclude patterns only
+- Various bug fixes and stability improvements
+
 ## [1.2.0] - 2025-02-22
 
 ### Added
@@ -81,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project versioning with named snapshots
 
 
-[Unreleased]: https://github.com/sapn1s/workspace-to-text/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/sapn1s/workspace-to-text/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/sapn1s/workspace-to-text/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/sapn1s/workspace-to-text/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/sapn1s/workspace-to-text/releases/tag/v1.1.0
 [1.0.0]: https://github.com/sapn1s/workspace-to-text/releases/tag/v1.0.0

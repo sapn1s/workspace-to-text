@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TreeFolder } from './file_tree/TreeFolder';
-import { pathUtils, hasExcludedChildren } from './file_tree/TreeUtils';
+import { TreeFolder } from './utils/TreeFolder';
+import { pathUtils, hasExcludedChildren } from './utils/TreeUtils';
 
 export const FileTree = React.memo(({
   structure,

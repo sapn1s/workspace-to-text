@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
-import ProjectList from './components/ProjectList';
-import ProjectView from './components/ProjectView';
-import { NewProject } from './components/NewProject';
-import { SizeWarningDialog } from './components/SizeWarningDialog';
+import ProjectListPage from './pages/ProjectList/ProjectListPage';
+import ProjectView from './pages/ProjectView/ProjectView';
+import { SizeWarningDialog } from './pages/ProjectView/components/SizeWarningDialog/SizeWarningDialog';
 import { useProjects } from './hooks/useProjects';
 import { usePatterns } from './hooks/usePatterns';
 import { useAnalysis } from './hooks/useAnalysis';
@@ -75,16 +74,14 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="min-h-screen bg-gray-900 text-gray-100 p-6 overflow-auto">
-        <div className="max-w-7xl w-full mx-auto">
+        <div className="w-full mx-auto">
           {!selectedProject ? (
-            <>
-              <NewProject onCreateProject={handleCreateProject} />
-              <ProjectList
-                projects={projects}
-                onSelectProject={handleSelectProject}
-                onDeleteProject={handleDeleteProject}
-              />
-            </>
+            <ProjectListPage
+              projects={projects}
+              onCreateProject={handleCreateProject}
+              onSelectProject={handleSelectProject}
+              onDeleteProject={handleDeleteProject}
+            />
           ) : (
             <ProjectView
               project={selectedProject}

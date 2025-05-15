@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function AnalysisResultContainer({ result }) {
   const characterCount = result ? result.length : 0;
 

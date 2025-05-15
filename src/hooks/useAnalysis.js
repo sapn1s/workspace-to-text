@@ -8,34 +8,34 @@ export function useAnalysis() {
   const [showSizeWarning, setShowSizeWarning] = useState(false);
   const [sizeScanResult, setSizeScanResult] = useState(null);
 
-  const handleAnalyze = async (projectId, projectPath, includePatterns, excludePatterns) => {
-    if (!projectPath) {
-      setResult('Please select a project folder first.');
+ const handleAnalyze = async (projectId, projectPath, includePatterns, excludePatterns) => {
+  if (!projectPath) {
+    setResult('Please select a project folder first.');
+    return;
+  }
+
+  try {
+    // Set loading state for size check
+    setIsCheckingSize(true);
+    
+    // Pass the specific project/version ID to the size check
+    const sizeStats = await window.electron.checkFolderSize(projectId, projectPath);
+    
+    setIsCheckingSize(false);
+
+    if (sizeStats.exceedsLimits) {
+      setSizeScanResult(sizeStats);
+      setShowSizeWarning(true);
       return;
     }
 
-    try {
-      // Set loading state for size check
-      setIsCheckingSize(true);
-      
-      // Check folder size first
-      const sizeStats = await window.electron.checkFolderSize(projectPath);
-      
-      setIsCheckingSize(false);
-
-      if (sizeStats.exceedsLimits) {
-        setSizeScanResult(sizeStats);
-        setShowSizeWarning(true);
-        return;
-      }
-
-      await performAnalysis(projectId, projectPath, includePatterns, excludePatterns);
-    } catch (error) {
-      setIsCheckingSize(false);
-      setResult(`Error: ${error.message}`);
-      setFileSizeData([]);
-    }
-  };
+    await performAnalysis(projectId, projectPath, includePatterns, excludePatterns);
+  } catch (error) {
+    setIsCheckingSize(false);
+    setResult(`Error: ${error.message}`);
+    setFileSizeData([]);
+  }
+};
 
   const performAnalysis = async (projectId, projectPath, includePatterns, excludePatterns) => {
     setIsAnalyzing(true);

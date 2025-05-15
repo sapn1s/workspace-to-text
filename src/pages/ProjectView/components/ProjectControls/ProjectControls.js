@@ -4,8 +4,8 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import PatternInputs from './PatternInputs';
-import ProjectSettings from './ProjectSettings';
+import PatternInputs from '../PatternInputs/PatternInputs';
+import ProjectSettings from '../ProjectSettings/ProjectSettings';
 
 export function ProjectControls({
   projectPath,

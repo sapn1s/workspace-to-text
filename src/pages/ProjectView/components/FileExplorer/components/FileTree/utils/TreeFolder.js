@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FileTreeItem } from '../FileTreeItem';
-import { ContextMenu } from '../ContextMenu';
+import { FileTreeItem } from '../../FileTreeItem';
 import { pathUtils, checkExcludedStatus, hasExcludedChildren } from './TreeUtils';
+import { ContextMenu } from '../../ContextMenu/ContextMenu'
 
 export const TreeFolder = ({
   structure,
@@ -16,22 +16,22 @@ export const TreeFolder = ({
   containsExcluded
 }) => {
   const [contextMenu, setContextMenu] = useState(null);
-  
-  const currentRelativePath = level === 0 
-    ? structure.path 
+
+  const currentRelativePath = level === 0
+    ? structure.path
     : pathUtils.join(parentPath, structure.name);
 
   const handleContextMenu = (e, item) => {
     e.preventDefault();
-    
+
     const fullPath = currentRelativePath;
-    const pattern = item.type === 'folder' 
+    const pattern = item.type === 'folder'
       ? `${fullPath},${fullPath}/**`
       : fullPath;
 
     const options = [{
-      label: checkExcludedStatus({ ...item, fullPath }, excludePatterns) ? 
-        `Include ${item.name}` : 
+      label: checkExcludedStatus({ ...item, fullPath }, excludePatterns) ?
+        `Include ${item.name}` :
         `Exclude ${item.name}`,
       onClick: async () => {
         await onExclude(pattern);
@@ -41,9 +41,10 @@ export const TreeFolder = ({
       }
     }];
 
+    // Use clientX and clientY instead of pageX and pageY
     setContextMenu({
-      x: e.pageX,
-      y: e.pageY,
+      x: e.clientX,
+      y: e.clientY,
       options
     });
   };

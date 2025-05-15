@@ -38,7 +38,7 @@ const ProjectMenu = ({ project, onVersionCreated }) => {
       
       setNewVersionName('');
       setIsCreatingVersion(false);
-      setIsOpen(false);
+      setIsOpen(false); //closes version create popup
       
       // Determine the main project ID for version listing 
       const mainProjectId = project.parent_id || project.id;

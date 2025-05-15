@@ -21,7 +21,7 @@ class ProjectHandlers {
     async createProject(_, name) {
         try {
             return await new Promise((resolve, reject) => {
-                this.db.run('INSERT INTO projects (name) VALUES (?)', [name], function(err) {
+                this.db.run('INSERT INTO projects (name) VALUES (?)', [name], function (err) {
                     if (err) reject(err);
                     resolve(this.lastID);
                 });
@@ -62,7 +62,7 @@ class ProjectHandlers {
     async deleteProject(_, projectId) {
         try {
             const project = await this.db.getAsync('SELECT path FROM projects WHERE id = ?', [projectId]);
-            
+
             await this.db.runAsync(
                 'DELETE FROM projects WHERE id = ? OR parent_id = ?',
                 [projectId, projectId]
@@ -71,7 +71,7 @@ class ProjectHandlers {
             if (project?.path === projectState.getCurrentPath()) {
                 projectState.clearCurrentPath();
             }
-            
+
             return true;
         } catch (error) {
             console.error('Error deleting project:', error);
@@ -145,7 +145,7 @@ class ProjectHandlers {
     async createProjectVersion({ projectId, versionName }) {
         try {
             console.log(`Creating version from project id: ${projectId} with name: ${versionName}`);
-            
+
             // Get the source project to copy settings from (this is the currently selected version)
             const sourceProject = await this.db.getAsync(
                 'SELECT * FROM projects WHERE id = ?',
@@ -177,14 +177,15 @@ class ProjectHandlers {
             }
 
             console.log(`Creating new version with settings from source project ${sourceProject.id} (${sourceProject.version_name || 'main'}) 
-                        and linking to main project ${mainProjectId}`);
+                      and linking to main project ${mainProjectId}`);
 
-            return new Promise((resolve, reject) => {
+            // Create the new version
+            const newVersionId = await new Promise((resolve, reject) => {
                 this.db.run(
                     `INSERT INTO projects (
-                        name, path, include_patterns, exclude_patterns, 
-                        parent_id, version_name, respect_gitignore, ignore_dotfiles
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                name, path, include_patterns, exclude_patterns, 
+                parent_id, version_name, respect_gitignore, ignore_dotfiles
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         mainProject.name,
                         sourceProject.path,
@@ -195,16 +196,76 @@ class ProjectHandlers {
                         sourceProject.respect_gitignore,
                         sourceProject.ignore_dotfiles
                     ],
-                    function(err) {
+                    function (err) {
                         if (err) reject(err);
                         resolve(this.lastID);
                     }
                 );
             });
+
+            // Copy module associations and their enabled/disabled states
+            await this.copyModuleAssociations(sourceProject.id, newVersionId);
+
+            return newVersionId;
         } catch (error) {
             console.error('Error creating project version:', error);
             throw error;
         }
+    }
+
+    async copyModuleAssociations(sourceVersionId, newVersionId) {
+        try {
+            // Get all modules associated with the main project
+            const mainProjectId = await this.getMainProjectId(sourceVersionId);
+            const modules = await this.db.allAsync(
+                'SELECT id FROM modules WHERE project_id = ?',
+                [mainProjectId]
+            );
+
+            // Get the module inclusion states from the source version
+            const sourceInclusions = await this.db.allAsync(`
+            SELECT module_id, is_included 
+            FROM version_modules 
+            WHERE version_id = ?
+          `, [sourceVersionId]);
+
+            // Create a map of module states from the source version
+            const moduleStates = new Map();
+            sourceInclusions.forEach(inc => {
+                moduleStates.set(inc.module_id, inc.is_included);
+            });
+
+            // Copy all module states to the new version
+            for (const module of modules) {
+                // Default to included (true) if not found in the source version
+                const isIncluded = moduleStates.has(module.id)
+                    ? moduleStates.get(module.id)
+                    : 1;
+
+                await this.db.runAsync(`
+              INSERT INTO version_modules (version_id, module_id, is_included)
+              VALUES (?, ?, ?)
+            `, [newVersionId, module.id, isIncluded]);
+            }
+
+            console.log(`Copied module associations from version ${sourceVersionId} to version ${newVersionId}`);
+        } catch (error) {
+            console.error('Error copying module associations:', error);
+            throw error;
+        }
+    }
+
+    async getMainProjectId(projectId) {
+        const project = await this.db.getAsync(
+            'SELECT id, parent_id FROM projects WHERE id = ?',
+            [projectId]
+        );
+
+        if (!project) {
+            throw new Error(`Project with ID ${projectId} not found`);
+        }
+
+        return project.parent_id || project.id;
     }
 
     async getProjectVersions(projectId) {
@@ -214,14 +275,14 @@ class ProjectHandlers {
                 'SELECT id, parent_id FROM projects WHERE id = ?',
                 [projectId]
             );
-            
+
             if (!project) {
                 return [];
             }
-            
+
             // If this is a version, use its parent_id to find all versions
             const mainProjectId = project.parent_id || project.id;
-            
+
             return await this.db.allAsync(
                 'SELECT * FROM projects WHERE parent_id = ? ORDER BY id DESC',
                 [mainProjectId]

@@ -40,20 +40,23 @@ class AnalysisHandlers {
     }
   }
 
-  async checkFolderSize(_, folderPath) {
+  async checkFolderSize(_, { projectId, folderPath }) {
     try {
+      // Get settings specific to this project/version ID
       const project = await this.db.getAsync(
-        'SELECT respect_gitignore, ignore_dotfiles, exclude_patterns FROM projects WHERE path = ?',
-        [folderPath]
+        'SELECT respect_gitignore, ignore_dotfiles, exclude_patterns FROM projects WHERE id = ?',
+        [projectId]
       );
 
       if (!project) {
-        console.warn('No project found for path:', folderPath);
+        console.warn('No project found with ID:', projectId);
         return await getFolderStats(folderPath, '', {
           respectGitignore: true,
           ignoreDotfiles: true
         });
       }
+
+      console.log(`Using settings from project ID ${projectId} for folder size check`);
 
       return await getFolderStats(
         folderPath,
