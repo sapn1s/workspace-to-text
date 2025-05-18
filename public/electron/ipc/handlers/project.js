@@ -11,6 +11,7 @@ class ProjectHandlers {
         ipcMain.handle('project:list', this.getProjects.bind(this));
         ipcMain.handle('project:setPath', this.setProjectPath.bind(this));
         ipcMain.handle('project:delete', this.deleteProject.bind(this));
+        ipcMain.handle('project:rename', this.renameProject.bind(this));
         ipcMain.handle('project:getSettings', (_, projectId) => this.getProjectSettings(projectId));
         ipcMain.handle('project:getPatterns', (_, projectId) => this.getProjectPatterns(projectId));
         ipcMain.handle('project:updatePatterns', (_, args) => this.updateProjectPatterns(args));
@@ -75,6 +76,16 @@ class ProjectHandlers {
             return true;
         } catch (error) {
             console.error('Error deleting project:', error);
+            throw error;
+        }
+    }
+
+    async renameProject(_, { id, name }) {
+        try {
+            await this.db.runAsync('UPDATE projects SET name = ? WHERE id = ?', [name, id]);
+            return true;
+        } catch (error) {
+            console.error('Error renaming project:', error);
             throw error;
         }
     }

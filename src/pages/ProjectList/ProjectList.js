@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { TrashIcon, ChevronDownIcon, ChevronRightIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
+import { TrashIcon, ChevronRightIcon, ExclamationTriangleIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { Dialog } from '../../components/common/Dialog';
+import { RenameProjectDialog } from './components/RenameProject/RenameProjectDialog';
 
 // Confirmation Dialog Component
 function DeleteConfirmationDialog({ project, onConfirm, onCancel }) {
@@ -50,9 +51,10 @@ function DeleteConfirmationDialog({ project, onConfirm, onCancel }) {
   );
 }
 
-function ProjectList({ projects = [], onSelectProject, onDeleteProject }) {
+function ProjectList({ projects = [], onSelectProject, onDeleteProject, onRenameProject }) {
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [projectToDelete, setProjectToDelete] = useState(null);
+  const [projectToRename, setProjectToRename] = useState(null);
 
   const groupedProjects = projects.reduce((acc, project) => {
     if (!project.parent_id) {
@@ -93,6 +95,11 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject }) {
     setProjectToDelete(projectWithVersions);
   };
 
+  const handleRenameClick = (project, event) => {
+    event.stopPropagation(); // Prevent triggering project selection
+    setProjectToRename(project);
+  };
+
   const confirmDelete = () => {
     if (projectToDelete) {
       onDeleteProject(projectToDelete.id);
@@ -102,6 +109,11 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject }) {
 
   const cancelDelete = () => {
     setProjectToDelete(null);
+  };
+
+  const handleRename = (projectId, newName) => {
+    onRenameProject(projectId, newName);
+    setProjectToRename(null);
   };
 
   return (
@@ -152,6 +164,13 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject }) {
                     </span>
                   </button>
                   <button
+                    onClick={(e) => handleRenameClick(main, e)}
+                    className="px-2 py-3 hover:bg-blue-600 transition-colors"
+                    title="Rename project"
+                  >
+                    <PencilIcon className="h-5 w-5 text-blue-500" />
+                  </button>
+                  <button
                     onClick={(e) => handleDeleteClick(main, e)}
                     className="px-4 py-3 hover:bg-red-600 transition-colors"
                     title="Delete project"
@@ -177,6 +196,13 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject }) {
                             </span>
                           </button>
                           <button
+                            onClick={(e) => handleRenameClick(version, e)}
+                            className="px-2 py-2 hover:bg-blue-600 transition-colors"
+                            title="Rename version"
+                          >
+                            <PencilIcon className="h-4 w-4 text-blue-400" />
+                          </button>
+                          <button
                             onClick={(e) => handleDeleteClick(version, e)}
                             className="px-4 py-2 hover:bg-red-600 transition-colors"
                             title="Delete version"
@@ -200,6 +226,14 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject }) {
           project={projectToDelete}
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
+        />
+      )}
+      {/* Rename Dialog */}
+      {projectToRename && (
+        <RenameProjectDialog
+          project={projectToRename}
+          onSave={handleRename}
+          onClose={() => setProjectToRename(null)}
         />
       )}
     </>

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { NewProject } from './components/NewProject/NewProject';
 import ProjectList from './ProjectList';
 
-export default function ProjectListPage({ projects, onCreateProject, onSelectProject, onDeleteProject }) {
+export default function ProjectListPage({ projects, onCreateProject, onSelectProject, onDeleteProject, onRenameProject  }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter projects based on search term
@@ -42,6 +42,7 @@ export default function ProjectListPage({ projects, onCreateProject, onSelectPro
         projects={filteredProjects}
         onSelectProject={onSelectProject}
         onDeleteProject={onDeleteProject}
+        onRenameProject={onRenameProject}
       />
     </>
   );

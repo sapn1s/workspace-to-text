@@ -17,6 +17,7 @@ function App() {
     loadProjects,
     handleSelectProject,
     handleDeleteProject,
+    handleRenameProject,
     handleVersionSelect,
     handleVersionCreated
   } = useProjects();
@@ -81,6 +82,7 @@ function App() {
               onCreateProject={handleCreateProject}
               onSelectProject={handleSelectProject}
               onDeleteProject={handleDeleteProject}
+              onRenameProject={handleRenameProject}
             />
           ) : (
             <ProjectView

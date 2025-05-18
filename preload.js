@@ -6,6 +6,7 @@ const ipcApi = {
     getProjects: () => ipcRenderer.invoke('project:list'),
     setProjectPath: (id, path) => ipcRenderer.invoke('project:setPath', { id, path }),
     deleteProject: (id) => ipcRenderer.invoke('project:delete', id),
+    renameProject: (id, name) => ipcRenderer.invoke('project:rename', { id, name }),
     getProjectSettings: (projectId) => ipcRenderer.invoke('project:getSettings', projectId),
     getProjectPatterns: (projectId) => ipcRenderer.invoke('project:getPatterns', projectId),
     updateProjectPatterns: (projectId, includePatterns, excludePatterns) =>

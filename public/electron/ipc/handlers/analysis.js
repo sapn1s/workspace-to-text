@@ -55,9 +55,7 @@ class AnalysisHandlers {
           ignoreDotfiles: true
         });
       }
-
-      console.log(`Using settings from project ID ${projectId} for folder size check`);
-
+      
       return await getFolderStats(
         folderPath,
         project.exclude_patterns || '',

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2025-05-18
+
+### Added
+- Ability to rename project
+
+### Improved
+- Large directory checking no longer scans all files, much more efficient/faster.
+
 ## [1.3.0] - 2025-05-15
 
 ### Added
