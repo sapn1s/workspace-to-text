@@ -61,7 +61,7 @@ async function initModulesTables(db) {
         CREATE TABLE IF NOT EXISTS version_modules (
             version_id INTEGER,
             module_id INTEGER,
-            is_included BOOLEAN DEFAULT 1,
+            is_included BOOLEAN DEFAULT 0,
             FOREIGN KEY(version_id) REFERENCES projects(id) ON DELETE CASCADE,
             FOREIGN KEY(module_id) REFERENCES modules(id) ON DELETE CASCADE,
             PRIMARY KEY(version_id, module_id)

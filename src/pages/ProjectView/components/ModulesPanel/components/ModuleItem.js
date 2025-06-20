@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronDownIcon, ChevronRightIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Custom Toggle Switch Component

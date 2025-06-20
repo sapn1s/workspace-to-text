@@ -8,7 +8,9 @@ export function useAnalysis() {
   const [showSizeWarning, setShowSizeWarning] = useState(false);
   const [sizeScanResult, setSizeScanResult] = useState(null);
 
-  const handleAnalyze = async (projectId, projectPath, includePatterns, excludePatterns) => {
+  const handleAnalyze = async (projectId, projectPath) => {
+    console.log("Handling analysis for project", projectId);
+    
     if (!projectPath) {
       setResult('Please select a project folder first.');
       return;
@@ -19,6 +21,8 @@ export function useAnalysis() {
       setIsCheckingSize(true);
 
       // Pass the specific project/version ID to the size check
+      // Note: excludePatterns parameter is not needed since the backend
+      // will use the PatternResolutionService to get all resolved patterns
       const sizeStats = await window.electron.checkFolderSize(projectId, projectPath);
 
       setIsCheckingSize(false);
@@ -29,7 +33,7 @@ export function useAnalysis() {
         return;
       }
 
-      await performAnalysis(projectId, projectPath, includePatterns, excludePatterns);
+      await performAnalysis(projectId, projectPath);
     } catch (error) {
       setIsCheckingSize(false);
       setResult(`Error: ${error.message}`);
@@ -37,17 +41,18 @@ export function useAnalysis() {
     }
   };
 
-  const performAnalysis = async (projectId, projectPath, includePatterns, excludePatterns) => {
+  const performAnalysis = async (projectId, projectPath) => {
     setIsAnalyzing(true);
     setResult('Analyzing...');
     setFileSizeData([]);
 
     try {
+      // The backend analysis handler will automatically resolve patterns using
+      // PatternResolutionService.resolveProjectPatterns(projectId)
+      // This includes user-defined patterns, module patterns, gitignore, and dotfiles
       const analysisResult = await window.electron.analyzeProject(
         projectId,
-        projectPath,
-        includePatterns,
-        excludePatterns
+        projectPath
       );
 
       // Handle the new result structure

@@ -1,3 +1,5 @@
+// src/pages/ProjectView/components/ProjectControls/ProjectControls.js - Updated to pass resolved patterns
+
 import React from 'react';
 import {
   FolderIcon,
@@ -14,10 +16,9 @@ export function ProjectControls({
   onFolderSelect,
   onAnalyze,
   projectId,
-  includePatterns,
   excludePatterns,
-  onIncludeChange,
-  onExcludeChange
+  onExcludeChange,
+  resolvedPatterns // New prop to pass to PatternInputs
 }) {
   return (
     <div className="bg-gray-800 rounded-lg p-4 space-y-1">
@@ -41,10 +42,9 @@ export function ProjectControls({
       <ProjectSettings projectId={projectId} />
 
       <PatternInputs
-        includePatterns={includePatterns}
         excludePatterns={excludePatterns}
-        onIncludeChange={onIncludeChange}
         onExcludeChange={onExcludeChange}
+        resolvedPatterns={resolvedPatterns} // Pass resolved patterns for summary display
       />
 
       <button

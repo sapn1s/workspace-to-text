@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -18,13 +18,15 @@ const ChipInput = ({ value, onChange, placeholder, highlightText }) => {
     pattern.split(',').forEach(p => {
       if (p.trim()) newPatterns.add(p.trim());
     });
-    onChange(Array.from(newPatterns).join(','));
+    const newValue = Array.from(newPatterns).join(',');
+    onChange(newValue);
     setInputValue('');
   };
 
   const removePattern = (patternToRemove) => {
     const newPatterns = patterns.filter(p => p !== patternToRemove);
-    onChange(newPatterns.join(','));
+    const newValue = newPatterns.join(',');
+    onChange(newValue);
   };
 
   const handleKeyDown = (e) => {
@@ -104,9 +106,14 @@ const ChipInput = ({ value, onChange, placeholder, highlightText }) => {
   );
 };
 
-const PatternInputs = ({ includePatterns, excludePatterns, onIncludeChange, onExcludeChange }) => {
+const PatternInputs = ({ 
+  excludePatterns, 
+  onExcludeChange,
+  resolvedPatterns
+}) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isCommonExcludesExpanded, setIsCommonExcludesExpanded] = useState(true);
+  const [isResolvedExpanded, setIsResolvedExpanded] = useState(false);
   const [searchText, setSearchText] = useState('');
 
   const commonExcludes = [
@@ -170,26 +177,13 @@ const PatternInputs = ({ includePatterns, excludePatterns, onIncludeChange, onEx
 
       {isExpanded && (
         <div className="space-y-4">
-          {/*
-           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
-              Include Patterns
-            </label>
-            <ChipInput
-              value={includePatterns}
-              onChange={onIncludeChange}
-              placeholder="Type a pattern and press Enter (e.g., src/**, *.js)"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Press Enter or comma to add patterns. Examples: src/** (all files in src), *.{'{js,ts}'} (all JS/TS files)
-            </p>
-          </div>
-          */}
-
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              Exclude Patterns
+              Custom Exclude Patterns
             </label>
+            <div className="text-xs text-gray-400 mb-2">
+              Add your own patterns here. They will be combined with module patterns and system settings during analysis.
+            </div>
 
             {/* Search bar for patterns */}
             <div className="mb-2 relative">

@@ -9,7 +9,13 @@ export const FileTree = React.memo(({
   parentIsExcluded = false,
   basePath = '',
   parentPath = '',
-  excludePatterns = ''
+  excludePatterns = '',
+  initiallyExpanded = false,
+  preservedExpansionState = {},
+  onExpansionStateChange,
+  // New props for module functionality
+  modules = [],
+  onAddToModule
 }) => {
 
   const [expanded, setExpanded] = useState({});
@@ -18,7 +24,7 @@ export const FileTree = React.memo(({
   const [containsExcluded, setContainsExcluded] = useState(false);
 
   const currentRelativePath = level === 0 
-    ? structure?.path  // Use structure.path directly instead of localStructure.path
+    ? structure?.path
     : pathUtils.join(parentPath, structure?.name || '');
 
   // First update localStructure with the incoming structure and computed fullPath
@@ -26,16 +32,56 @@ export const FileTree = React.memo(({
     setLocalStructure({
       ...structure,
       fullPath: currentRelativePath,
-      path: structure?.path // Preserve the original path
+      path: structure?.path
     });
   }, [structure, currentRelativePath]);
 
-  // Then handle expansion based on the updated localStructure
+  // Initialize expansion state from preserved state or defaults
   useEffect(() => {
-    if (level === 0) {
-      toggleFolder(currentRelativePath, true);
+    const hasPreservedState = Object.keys(preservedExpansionState).length > 0;
+    const hasCurrentState = Object.keys(expanded).length > 0;
+    
+    if (hasPreservedState && !hasCurrentState) {
+      setExpanded(preservedExpansionState);
+    } else if (!hasPreservedState && !hasCurrentState) {
+      const newExpanded = {};
+      
+      if (level === 0 || initiallyExpanded) {
+        newExpanded[currentRelativePath] = true;
+      }
+      
+      setExpanded(newExpanded);
     }
-  }, [level, localStructure?.path]);;
+  }, [structure?.path]);
+
+  // Separate effect for initial expansion (only runs once per mount)
+  useEffect(() => {
+    if ((level === 0 || initiallyExpanded) && Object.keys(expanded).length === 0) {
+      setExpanded(prev => ({
+        ...prev,
+        [currentRelativePath]: true
+      }));
+    }
+  }, [level, initiallyExpanded, currentRelativePath]);
+
+  // Reset loaded children when the structure key (path) changes
+  useEffect(() => {
+    if (structure?.path && structure.path !== localStructure?.path) {
+      setLoadedChildren({});
+    }
+  }, [structure?.path, localStructure?.path]);
+
+  // Report expansion state changes back to parent (only from root level)
+  const lastReportedState = React.useRef('');
+  useEffect(() => {
+    if (level === 0 && onExpansionStateChange) {
+      const currentStateString = JSON.stringify(expanded);
+      if (currentStateString !== lastReportedState.current) {
+        lastReportedState.current = currentStateString;
+        onExpansionStateChange(expanded);
+      }
+    }
+  }, [expanded, level, onExpansionStateChange]);
 
   useEffect(() => {
     const checkExclusions = async () => {
@@ -70,11 +116,9 @@ export const FileTree = React.memo(({
 
       const children = await window.electron.getFileStructure(
         absolutePath,
-        '',
-        excludePatterns,
         basePath
       );
-
+      
       if (children && children.children) {
         const updatedChildren = children.children.map(child => ({
           ...child,
@@ -112,6 +156,12 @@ export const FileTree = React.memo(({
         basePath={basePath}
         parentPath={parentRelativePath}
         excludePatterns={excludePatterns}
+        initiallyExpanded={initiallyExpanded}
+        preservedExpansionState={level === 0 ? {} : preservedExpansionState}
+        onExpansionStateChange={level === 0 ? undefined : onExpansionStateChange}
+        // Pass through module props
+        modules={modules}
+        onAddToModule={onAddToModule}
       />
     ));
   };
@@ -129,6 +179,9 @@ export const FileTree = React.memo(({
         expanded={expanded}
         onToggle={toggleFolder}
         containsExcluded={containsExcluded}
+        // Pass module props to TreeFolder
+        modules={modules}
+        onAddToModule={onAddToModule}
       />
       {localStructure.type === 'folder' && expanded[currentRelativePath] && (
         <div className="pl-2">

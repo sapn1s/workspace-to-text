@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2025-06-20
+
+### Added
+- **Module System**
+  - Create reusable pattern collections shared across project versions
+  - Module dependencies and version-specific toggling
+  - Context menu integration for pattern assignment
+
+- **Dependency Graph Analysis**
+  - Interactive dependency visualization with multiple layouts
+  - Node categorization and search functionality
+  - Separate popup windows for graph analysis
+
+- **Enhanced File Explorer**
+  - Context menu for pattern management
+  - Real-time exclusion indicators
+  - Module integration
+
+  - New bugs
+
+### Improved
+- **Backend Architecture**
+  - Modular IPC handler structure
+  - Pattern Resolution Service for unified pattern handling
+  - Enhanced database schema
+
+- **User Interface**
+  - Three-column layout design
+  - Collapsible module panel
+  - Enhanced pattern search with highlighting
+
+### Fixed
+- Pattern synchronization across components
+- Version switching with proper state preservation
+- Path normalization across operating systems
+- Context menu positioning and interactions
+
+## [1.3.2] - 2025-05-20
+
+### Improved
+- Project explorer tree correctly updates after switching paths/versions
+
 ## [1.3.1] - 2025-05-18
 
 ### Added

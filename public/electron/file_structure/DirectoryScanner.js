@@ -1,54 +1,28 @@
+// public/electron/file_structure/DirectoryScanner.js - FIXED VERSION
+
 const path = require('path');
 const { ExclusionManager } = require('./ExclusionManager');
 const { FileUtils } = require('./FileUtils');
 const { PathUtils } = require('./PathUtils');
 
 class DirectoryScanner {
-    constructor(rootDir, includePatterns, excludePatterns, settings = {}) {
+    constructor(rootDir, excludePatterns, settings = {}, resolvedPatterns = null) {
         this.rootDir = path.normalize(rootDir);
-        this.exclusionManager = new ExclusionManager(rootDir, excludePatterns, settings);
-        this.includePatterns = this.setupIncludePatterns(includePatterns);
+        
+        // FIX: Pass the exclude patterns string, not the raw parameter
+        const patternsString = resolvedPatterns ? 
+            resolvedPatterns.excludePatterns : 
+            (excludePatterns || '');
+            
+        this.exclusionManager = new ExclusionManager(
+            this.rootDir, 
+            patternsString, // Pass the string, not array or object
+            settings,
+            resolvedPatterns
+        );
         this.processedPaths = new Set();
         this.errors = [];
-    }
-
-    setupIncludePatterns(includePatterns) {
-        if (!includePatterns) return [];
-
-        return includePatterns.split(',')
-            .map(p => p.trim())
-            .filter(p => p.length > 0)
-            .map(pattern => {
-                return pattern
-                    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-                    .replace(/\*/g, '.*')
-                    .replace(/\?/g, '.');
-            });
-    }
-
-    shouldIncludePath(relativePath) {
-        if (this.includePatterns.length === 0) return true;
-
-        try {
-            const normalizedPath = PathUtils.normalizePath(relativePath);
-            
-            // Always include directories for navigation
-            if (FileUtils.isDirectory(path.join(this.rootDir, relativePath))) {
-                return true;
-            }
-
-            return this.includePatterns.some(pattern => {
-                const regex = new RegExp(`^${pattern}$`);
-                return regex.test(normalizedPath);
-            });
-        } catch (error) {
-            this.errors.push({
-                type: 'INCLUDE_CHECK_ERROR',
-                path: relativePath,
-                message: error.message
-            });
-            return true; // Include by default on error
-        }
+        this.resolvedPatterns = resolvedPatterns;
     }
 
     async validateDirectory(dirPath) {
@@ -74,80 +48,89 @@ class DirectoryScanner {
         }
     }
 
-    async scanDirectory(dirPath, projectRoot = null, parentPath = '') {
+    async scanDirectory(dirPath, projectRoot = null) {
         // Reset error state for new scan
         this.errors = [];
         this.processedPaths.clear();
         this.exclusionManager.clearCache();
 
-        const relativePath = projectRoot ? 
-            path.relative(projectRoot, dirPath) :
-            path.relative(this.rootDir, dirPath);
-
-        const normalizedRelativePath = PathUtils.normalizePath(relativePath);
-        const fullRelativePath = PathUtils.joinPaths(parentPath, normalizedRelativePath);
+        // FIX: Simplify path calculation
+        const normalizedDirPath = path.normalize(dirPath);
+        const scanRoot = projectRoot || this.rootDir;
 
         // Validate directory before proceeding
-        const isValid = await this.validateDirectory(dirPath);
+        const isValid = await this.validateDirectory(normalizedDirPath);
         if (!isValid) {
-            return this.createErrorResponse(dirPath, fullRelativePath);
+            return this.createErrorResponse(normalizedDirPath, path.basename(normalizedDirPath));
         }
 
         try {
-            const entries = await FileUtils.readdirAsync(dirPath);
-            const results = await this.processDirectoryEntries(dirPath, entries, projectRoot, fullRelativePath);
+            const entries = await FileUtils.readdirAsync(normalizedDirPath);
+            const results = await this.processDirectoryEntries(normalizedDirPath, entries, scanRoot);
 
             return {
                 type: 'folder',
-                name: path.basename(dirPath),
-                path: fullRelativePath,
-                fullPath: fullRelativePath,
-                excluded: PathUtils.isRootPath(fullRelativePath) ? false : this.exclusionManager.isPathExcluded(fullRelativePath),
+                name: path.basename(normalizedDirPath),
+                path: path.relative(scanRoot, normalizedDirPath).replace(/\\/g, '/') || '.',
+                fullPath: path.relative(scanRoot, normalizedDirPath).replace(/\\/g, '/') || '.',
+                excluded: false, // Root is never excluded
                 children: results,
                 hasChildren: results.length > 0,
-                errors: this.errors.length > 0 ? this.errors : undefined
+                errors: this.errors.length > 0 ? this.errors : undefined,
+                // Include pattern info for debugging if resolved patterns are available
+                ...(this.resolvedPatterns && process.env.NODE_ENV === 'development' && {
+                    _patternInfo: {
+                        excludeCount: this.resolvedPatterns.excludeArray?.length || 0,
+                        includeGitignore: this.resolvedPatterns.includeGitignore,
+                        includeDotfiles: this.resolvedPatterns.includeDotfiles,
+                        moduleCount: this.resolvedPatterns.moduleInfo?.size || 0
+                    }
+                })
             };
         } catch (error) {
             this.errors.push({
                 type: 'SCAN_ERROR',
-                path: dirPath,
+                path: normalizedDirPath,
                 message: error.message
             });
-            return this.createErrorResponse(dirPath, fullRelativePath);
+            return this.createErrorResponse(normalizedDirPath, path.basename(normalizedDirPath));
         }
     }
 
-    async processDirectoryEntries(dirPath, entries, projectRoot, parentPath) {
+    async processDirectoryEntries(dirPath, entries, scanRoot) {
         const results = [];
 
         for (const entry of entries) {
             const fullPath = path.join(dirPath, entry);
-            const entryRelativePath = projectRoot ? 
-                path.relative(projectRoot, fullPath) :
-                path.relative(this.rootDir, fullPath);
-
-            const entryFullRelativePath = PathUtils.joinPaths(parentPath, PathUtils.normalizePath(path.basename(fullPath)));
+            
+            // FIX: Calculate relative path properly
+            const relativePath = path.relative(scanRoot, fullPath).replace(/\\/g, '/');
+            
+            // Skip if path calculation failed
+            if (!relativePath || relativePath.startsWith('..')) {
+                continue;
+            }
 
             try {
                 const stats = await FileUtils.statAsync(fullPath);
-                const isExcluded = this.exclusionManager.isPathExcluded(entryFullRelativePath);
+                const isExcluded = this.exclusionManager.isPathExcluded(relativePath);
 
                 if (stats.isDirectory()) {
                     results.push({
                         type: 'folder',
                         name: entry,
-                        path: entryFullRelativePath,
-                        fullPath: entryFullRelativePath,
+                        path: relativePath,
+                        fullPath: relativePath,
                         excluded: isExcluded,
                         hasChildren: (await FileUtils.readdirAsync(fullPath)).length > 0,
                         children: []
                     });
-                } else if (this.shouldIncludePath(entryRelativePath)) {
+                } else {
                     results.push({
                         type: 'file',
                         name: entry,
-                        path: entryFullRelativePath,
-                        fullPath: entryFullRelativePath,
+                        path: relativePath,
+                        fullPath: relativePath,
                         excluded: isExcluded
                     });
                 }
@@ -157,6 +140,7 @@ class DirectoryScanner {
                     path: fullPath,
                     message: error.message
                 });
+                console.warn(`DirectoryScanner: Error processing ${fullPath}:`, error.message);
             }
         }
 
@@ -166,12 +150,12 @@ class DirectoryScanner {
         });
     }
 
-    createErrorResponse(dirPath, fullRelativePath) {
+    createErrorResponse(dirPath, name) {
         return {
             type: 'folder',
-            name: path.basename(dirPath),
-            path: fullRelativePath,
-            fullPath: fullRelativePath,
+            name: name,
+            path: '.',
+            fullPath: '.',
             excluded: false,
             children: [],
             hasChildren: false,

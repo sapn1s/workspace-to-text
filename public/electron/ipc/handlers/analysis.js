@@ -2,10 +2,12 @@ const { ipcMain } = require('electron');
 const { analyzeProject } = require('../../analyzer');
 const { getFolderStats } = require('../../utils/sizeUtils');
 const { projectState } = require('../../state/ProjectState');
+const { PatternResolutionService } = require('../../services/PatternResolutionService');
 
 class AnalysisHandlers {
   constructor(db) {
     this.db = db;
+    this.patternService = new PatternResolutionService(db);
   }
 
   register() {
@@ -13,27 +15,31 @@ class AnalysisHandlers {
     ipcMain.handle('analysis:checkSize', this.checkFolderSize.bind(this));
   }
 
-  async analyzeProject(_, { projectId, path, includePatterns, excludePatterns }) {
+  async analyzeProject(_, { projectId, path }) {
     try {
       projectState.setCurrentPath(path);
 
-      const settings = await this.db.getAsync(
-        'SELECT respect_gitignore, ignore_dotfiles FROM projects WHERE id = ?',
-        [projectId]
-      );
+      console.log('Analysis: Resolving patterns for project', projectId);
 
-      // Update project patterns and path
-      await this.db.runAsync(
-        'UPDATE projects SET path = ?, include_patterns = ?, exclude_patterns = ? WHERE id = ?',
-        [path, includePatterns || '', excludePatterns || '', projectId]
-      );
+      // Get resolved patterns from the service (includes modules, gitignore, dotfiles)
+      const resolvedPatterns = await this.patternService.resolveProjectPatterns(projectId);
 
-      const result = await analyzeProject(path, includePatterns, excludePatterns, {
-        respectGitignore: Boolean(settings?.respect_gitignore),
-        ignoreDotfiles: Boolean(settings?.ignore_dotfiles)
+      console.log('Analysis: Using resolved patterns:', {
+        excludeCount: resolvedPatterns.excludeArray.length,
+        includeGitignore: resolvedPatterns.includeGitignore,
+        includeDotfiles: resolvedPatterns.includeDotfiles,
+        moduleCount: resolvedPatterns.moduleInfo?.size || 0
       });
 
-      return result; // Now returns both text and fileSizeData
+      // We use only the resolved patterns which include everything
+      const result = await analyzeProject(
+        path, 
+        resolvedPatterns, // Use resolved patterns (includes user + modules + system)
+        null, // No fallback patterns needed
+        {} // No basic settings needed (resolved patterns include system settings)
+      );
+
+      return result;
     } catch (error) {
       console.error('Error analyzing project:', error);
       throw error;
@@ -42,31 +48,39 @@ class AnalysisHandlers {
 
   async checkFolderSize(_, { projectId, folderPath }) {
     try {
-      // Get settings specific to this project/version ID
-      const project = await this.db.getAsync(
-        'SELECT respect_gitignore, ignore_dotfiles, exclude_patterns FROM projects WHERE id = ?',
-        [projectId]
-      );
+      console.log('Size check: Resolving patterns for project', projectId);
 
-      if (!project) {
-        console.warn('No project found with ID:', projectId);
-        return await getFolderStats(folderPath, '', {
-          respectGitignore: true,
-          ignoreDotfiles: true
-        });
-      }
+      // Get resolved patterns that include modules, gitignore, and dotfiles
+      const resolvedPatterns = await this.patternService.resolveProjectPatterns(projectId);
       
+      console.log('Size check: Using resolved patterns:', {
+        excludeCount: resolvedPatterns.excludeArray.length,
+        includeGitignore: resolvedPatterns.includeGitignore,
+        includeDotfiles: resolvedPatterns.includeDotfiles,
+        moduleCount: resolvedPatterns.moduleInfo?.size || 0
+      });
+
       return await getFolderStats(
         folderPath,
-        project.exclude_patterns || '',
+        resolvedPatterns.excludePatterns || '', // Use resolved exclude patterns string
         {
-          respectGitignore: Boolean(project.respect_gitignore),
-          ignoreDotfiles: Boolean(project.ignore_dotfiles)
+          respectGitignore: resolvedPatterns.includeGitignore,
+          ignoreDotfiles: resolvedPatterns.includeDotfiles
         }
       );
     } catch (error) {
       console.error('Error checking folder size:', error);
-      throw error;
+      
+      // Fallback to basic size check without patterns
+      try {
+        return await getFolderStats(folderPath, '', {
+          respectGitignore: true,
+          ignoreDotfiles: true
+        });
+      } catch (fallbackError) {
+        console.error('Fallback size check also failed:', fallbackError);
+        throw error; // Throw original error
+      }
     }
   }
 }

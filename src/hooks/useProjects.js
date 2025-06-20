@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
+// src/hooks/useProjects.js - Updated with version deletion support
+
+import { useState, useEffect, useRef } from 'react';
 
 export function useProjects() {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [versions, setVersions] = useState([]);
   const [projectPath, setProjectPath] = useState('');
+  const isVersionSwitching = useRef(false);
 
   const loadProjects = async () => {
+    console.log("Loading projects");
     const loadedProjects = await window.electron.getProjects();
     setProjects(loadedProjects);
     return loadedProjects.reduce((acc, project) => {
@@ -61,6 +65,7 @@ export function useProjects() {
       const allProjects = await window.electron.getProjects();
       const freshProject = allProjects.find(p => p.id === project.id);
       if (freshProject) {
+        // Set the project directly without clearing first
         setSelectedProject(freshProject);
         setProjectPath(freshProject.path || '');
 
@@ -76,19 +81,30 @@ export function useProjects() {
   const handleVersionSelect = async (version) => {
     if (!version) return;
     try {
+      // Set flag to indicate we're switching versions
+      isVersionSwitching.current = true;
+      
       const allProjects = await window.electron.getProjects();
       const freshVersion = allProjects.find(p => p.id === version.id);
 
       if (freshVersion) {
-        setSelectedProject(freshVersion);
+        // Update project path first 
         setProjectPath(freshVersion.path || '');
+        // Then update the selected project
+        setSelectedProject(freshVersion);
+        
+        console.log('Version switched to:', freshVersion.id, 'with path:', freshVersion.path);
 
         // Load all versions of this project family
         const parentId = freshVersion.parent_id || freshVersion.id;
         await loadVersions(parentId);
       }
+      
+      // Reset switching flag when done
+      isVersionSwitching.current = false;
     } catch (error) {
       console.error('Error selecting version:', error);
+      isVersionSwitching.current = false;
     }
   };
 
@@ -102,6 +118,34 @@ export function useProjects() {
       }
     } catch (error) {
       console.error('Error deleting project:', error);
+      throw error; // Re-throw so UI can show the error
+    }
+  };
+
+  // NEW: Handle version deletion
+  const handleDeleteVersion = async (mainProjectId) => {
+    try {
+      // Reload projects to get updated data
+      await loadProjects();
+      
+      // Reload versions for the main project
+      await loadVersions(mainProjectId);
+      
+      // If the deleted version was the currently selected one, switch to main project
+      if (selectedProject && selectedProject.parent_id === mainProjectId) {
+        const allProjects = await window.electron.getProjects();
+        const mainProject = allProjects.find(p => p.id === mainProjectId);
+        
+        if (mainProject) {
+          setSelectedProject(mainProject);
+          setProjectPath(mainProject.path || '');
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error handling version deletion:', error);
+      throw error;
     }
   };
 
@@ -119,9 +163,11 @@ export function useProjects() {
     }
   };
 
-
   const handleVersionCreated = async (mainProjectId, newVersionId) => {
     try {
+      // Set flag to indicate we're switching versions
+      isVersionSwitching.current = true;
+      
       // Reload all projects to get the latest data
       await loadProjects();
 
@@ -134,9 +180,10 @@ export function useProjects() {
       if (newVersion) {
         console.log("Switching to newly created version:", newVersion);
 
-        // Switch to the new version first
-        setSelectedProject(newVersion);
+        // Update project path first
         setProjectPath(newVersion.path || '');
+        // Then update the selected project
+        setSelectedProject(newVersion);
 
         // Then load all versions of this project family
         await loadVersions(mainProjectId);
@@ -145,8 +192,12 @@ export function useProjects() {
         // Reload the versions list as a fallback
         await loadVersions(mainProjectId);
       }
+      
+      // Reset switching flag when done
+      isVersionSwitching.current = false;
     } catch (error) {
       console.error('Error handling version creation:', error);
+      isVersionSwitching.current = false;
     }
   };
 
@@ -159,12 +210,14 @@ export function useProjects() {
     selectedProject,
     versions,
     projectPath,
+    isVersionSwitching: isVersionSwitching.current,
     setProjectPath,
     setSelectedProject,
     loadProjects,
     loadVersions,
     handleSelectProject,
     handleDeleteProject,
+    handleDeleteVersion, // NEW: Export the version deletion handler
     handleRenameProject,
     handleVersionSelect,
     handleVersionCreated

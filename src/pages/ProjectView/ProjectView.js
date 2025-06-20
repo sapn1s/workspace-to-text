@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+// src/pages/ProjectView/ProjectView.js - Fixed URL handling for production
+
+import { useState, useEffect } from 'react';
 import { ArrowLeftIcon, ClipboardIcon } from '@heroicons/react/24/outline';
 import ProjectMenu from './components/ProjectMenu/ProjectMenu';
 import ProjectVersionSelector from './components/ProjectVersionSelector/ProjectVersionSelector';
@@ -7,14 +9,14 @@ import AnalysisResultContainer from './components/AnalysisResultContainer/Analys
 import FileSizeAnalyzer from './components/FileSizeAnalyzer/FileSizeAnalyzer';
 import { ModulesPanel } from './components/ModulesPanel/components/ModulesPanel';
 import { useModules } from '../../hooks/useModules';
+import { usePatterns } from '../../hooks/usePatterns';
 import FileExplorer from './components/FileExplorer/FileExplorer';
+import { ShareIcon } from '@heroicons/react/24/outline';
 
 export default function ProjectView({
     project,
     versions,
     projectPath,
-    includePatterns,
-    excludePatterns,
     isAnalyzing,
     isCheckingSize,
     result,
@@ -22,21 +24,175 @@ export default function ProjectView({
     onBack,
     onFolderSelect,
     onAnalyze,
-    onIncludeChange,
-    onExcludeChange,
     onVersionSelect,
-    onVersionCreated
+    onVersionCreated,
+    onVersionDeleted
 }) {
     const [activeTab, setActiveTab] = useState('output');
     const [isModulesPanelCollapsed, setIsModulesPanelCollapsed] = useState(false);
+    const [isDependencyAnalyzing, setIsDependencyAnalyzing] = useState(false);
 
     const {
         modules,
-        loading: modulesLoading,
+        mainProjectId,
         createModule,
         updateModule,
-        deleteModule
+        deleteModule,
+        refreshModules
     } = useModules(project.id);
+
+    const {
+        excludePatterns,
+        resolvedPatterns,
+        loading: patternsLoading,
+        loadProjectPatterns,
+        handleExcludePatternAdd
+    } = usePatterns();
+
+    // Load patterns when project changes
+    useEffect(() => {
+        if (project?.id) {
+            console.log('ProjectView: Loading patterns for project', project.id);
+            loadProjectPatterns(project.id);
+        }
+    }, [project?.id, loadProjectPatterns]);
+
+    const handleAnalyzeClick = () => {
+        if (!projectPath) {
+            alert('Please select a project folder first');
+            return;
+        }
+        onAnalyze(project.id, projectPath);
+    };
+
+    const handlePatternChange = async (newPatterns) => {
+        await handleExcludePatternAdd(newPatterns, project.id);
+    };
+
+    const handleModuleChange = async () => {
+        console.log('Module change detected, refreshing patterns and modules...');
+        await loadProjectPatterns(project.id);
+        await refreshModules();
+    };
+
+    const handleModuleCreate = async (moduleData) => {
+        await createModule(moduleData);
+        await handleModuleChange();
+    };
+
+    const handleModuleUpdate = async (moduleData) => {
+        await updateModule(moduleData);
+        await handleModuleChange();
+    };
+
+    const handleModuleDelete = async (moduleId) => {
+        await deleteModule(moduleId);
+        await handleModuleChange();
+    };
+
+    const handleOpenDependencyGraph = async () => {
+        if (!projectPath) {
+            alert('Please select a project folder first');
+            return;
+        }
+
+        setIsDependencyAnalyzing(true);
+
+        try {
+            // Check folder size first
+            const sizeStats = await window.electron.checkDependencyAnalysisSize(project.id, projectPath);
+
+            if (sizeStats.exceedsLimits) {
+                const proceed = window.confirm(
+                    `This project is large (${sizeStats.totalFiles} files, ${sizeStats.totalSizeMB.toFixed(1)} MB). ` +
+                    'Dependency analysis may take a while. Continue?'
+                );
+
+                if (!proceed) {
+                    setIsDependencyAnalyzing(false);
+                    return;
+                }
+            }
+
+            // Pre-analyze dependencies in the main window
+            const dependencyData = await window.electron.analyzeDependencies(
+                project.id,
+                projectPath,
+                excludePatterns || ''
+            );
+
+            // Compress the data for URL transmission
+            const compressedData = {
+                stats: dependencyData.stats,
+                graph: {
+                    nodes: dependencyData.graph.nodes.map(node => ({
+                        id: node.id,
+                        label: node.label,
+                        type: node.type,
+                        path: node.path,
+                        imports: node.imports,
+                        importedBy: node.importedBy
+                    })),
+                    edges: dependencyData.graph.edges.map(edge => ({
+                        id: edge.id,
+                        from: edge.from,
+                        to: edge.to,
+                        type: edge.type
+                    }))
+                },
+                internal: (dependencyData.internal || []).slice(0, 50),
+                external: (dependencyData.external || []).slice(0, 50),
+                unresolved: (dependencyData.unresolved || []).slice(0, 50)
+            };
+
+            // Create URL with all necessary data
+            const params = new URLSearchParams({
+                projectId: project.id.toString(),
+                projectName: project.name,
+                projectPath,
+                excludePatterns: excludePatterns || '',
+                versionName: project.version_name || 'Main'
+            });
+
+            // Add dependency data as base64 encoded JSON
+            const dataString = JSON.stringify(compressedData);
+            const encodedData = btoa(encodeURIComponent(dataString));
+            params.set('dependencyData', encodedData);
+
+            // FIXED: Handle both development and production URLs
+            let baseUrl;
+            if (window.location.protocol === 'file:') {
+                // Production build - use the current file URL structure
+                const currentPath = window.location.pathname;
+                const baseDir = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                baseUrl = `${window.location.protocol}//${window.location.host}${baseDir}`;
+            } else {
+                // Development - use the origin
+                baseUrl = window.location.origin;
+            }
+            
+            const fullUrl = `${baseUrl}/index.html#dependency-graph?${params.toString()}`;
+
+            console.log('Opening dependency graph window with URL:', fullUrl);
+            
+            const popup = window.open(
+                fullUrl,
+                `dependency-graph-${project.id}`,
+                'width=1500,height=900,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'
+            );
+
+            if (popup) {
+                popup.focus();
+            } else {
+                alert('Popup blocked! Please allow popups for this site.');
+            }
+        } catch (error) {
+            console.error('Error analyzing dependencies:', error);
+            alert('Failed to analyze dependencies: ' + error.message);
+        } finally {
+            setIsDependencyAnalyzing(false);
+        }
+    };
 
     return (
         <div className="flex flex-col w-full mx-auto">
@@ -50,11 +206,22 @@ export default function ProjectView({
                     >
                         <ArrowLeftIcon className="h-5 w-5 text-blue-500" />
                     </button>
-                    <h2 className="text-xl font-semibold text-gray-100">{project.name}</h2>
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-100">{project.name}</h2>
+                        {project.version_name && (
+                            <span className="text-sm text-gray-400">Version: {project.version_name}</span>
+                        )}
+                    </div>
+                    {patternsLoading && (
+                        <span className="ml-2 text-sm text-blue-400">Loading patterns...</span>
+                    )}
                 </div>
                 <ProjectMenu
                     project={project}
+                    versions={versions}
                     onVersionCreated={onVersionCreated}
+                    onVersionDeleted={onVersionDeleted}
+                    onBack={onBack}
                 />
             </div>
 
@@ -67,18 +234,18 @@ export default function ProjectView({
 
             {/* Main Content Area */}
             <div className="flex gap-4 min-h-[calc(100vh-12rem)] mt-4">
-                {/* Left Sidebar - Project Explorer - 30% width */}
+                {/* Left Sidebar - Project Explorer */}
                 <div className="w-1/5 flex-none">
                     <FileExplorer
                         path={projectPath}
-                        includePatterns={includePatterns}
-                        excludePatterns={excludePatterns}
-                        onRefresh={onAnalyze}
-                        onExcludePatternAdd={onExcludeChange}
+                        project={project}
+                        onPatternChange={handlePatternChange}
+                        modules={modules}
+                        onModuleChange={handleModuleChange}
                     />
                 </div>
 
-                {/* Center Content Area - 50% width */}
+                {/* Center Content Area */}
                 <div className="w-1/2 flex-none flex flex-col">
                     {/* Controls Section */}
                     <ProjectControls
@@ -86,12 +253,11 @@ export default function ProjectView({
                         projectId={project.id}
                         isAnalyzing={isAnalyzing}
                         isCheckingSize={isCheckingSize}
-                        includePatterns={includePatterns}
                         excludePatterns={excludePatterns}
+                        resolvedPatterns={resolvedPatterns}
                         onFolderSelect={onFolderSelect}
-                        onAnalyze={onAnalyze}
-                        onIncludeChange={onIncludeChange}
-                        onExcludeChange={onExcludeChange}
+                        onAnalyze={handleAnalyzeClick}
+                        onExcludeChange={handlePatternChange}
                     />
 
                     {/* Results Section */}
@@ -118,8 +284,27 @@ export default function ProjectView({
                                 Size Analysis
                             </button>
 
-                            {/* Copy Button */}
-                            <div className="ml-auto p-2">
+                            {/* Copy and Dependencies Buttons */}
+                            <div className="ml-auto p-2 flex items-center space-x-2">
+                                <button
+                                    onClick={handleOpenDependencyGraph}
+                                    className="flex items-center px-3 py-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                    disabled={!projectPath || isDependencyAnalyzing}
+                                    title="Open dependency graph in new window"
+                                >
+                                    {isDependencyAnalyzing ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mr-2"></div>
+                                            Analyzing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ShareIcon className="h-4 w-4 mr-2 text-purple-500" />
+                                            Dependencies
+                                        </>
+                                    )}
+                                </button>
+
                                 <button
                                     onClick={() => window.electron.copyToClipboard(result)}
                                     className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -144,21 +329,20 @@ export default function ProjectView({
                     </div>
                 </div>
 
-                {/* Right Sidebar - Modules Panel - 20% width */}
-                {/*
-                   <div className={`flex-none ${isModulesPanelCollapsed ? 'w-1/12' : 'w-1/5'}`}>
+                {/* Right Sidebar - Modules Panel */}
+                <div className={`flex-none ${isModulesPanelCollapsed ? 'w-1/12' : 'w-1/5'}`}>
                     <ModulesPanel
                         project={project}
                         modules={modules}
+                        mainProjectId={mainProjectId}
                         isCollapsed={isModulesPanelCollapsed}
                         onToggleCollapse={() => setIsModulesPanelCollapsed(!isModulesPanelCollapsed)}
-                        onModuleCreate={createModule}
-                        onModuleUpdate={updateModule}
-                        onModuleDelete={deleteModule}
+                        onModuleCreate={handleModuleCreate}
+                        onModuleUpdate={handleModuleUpdate}
+                        onModuleDelete={handleModuleDelete}
+                        onModuleChange={handleModuleChange}
                     />
                 </div>
-                */}
-
             </div>
         </div>
     );

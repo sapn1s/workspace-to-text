@@ -26,7 +26,7 @@ function DeleteConfirmationDialog({ project, onConfirm, onCancel }) {
         {project.versions && project.versions.length > 0 && (
           <div className="bg-yellow-900/20 border border-yellow-700 rounded-md p-3">
             <p className="text-sm text-yellow-200">
-              This will also delete {project.versions.length} version{project.versions.length !== 1 ? 's' : ''}
+              This will also delete {project.versions.length} version {project.versions.length !== 1 ? 's' : ''}
               associated with this project.
             </p>
           </div>

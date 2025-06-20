@@ -31,7 +31,7 @@ export function ModuleList({
             isExpanded={expandedModules.has(module.id)}
             onToggleExpand={() => toggleExpand(module.id)}
             onEdit={() => onEdit(module)}
-            onDelete={() => onDelete(module.id)}
+            onDelete={() => onDelete(module)} // Pass full module object instead of just ID
             isIncluded={moduleVersions.get(module.id) ?? true}
             onToggleInclude={() => onModuleToggle(module.id)}
           />

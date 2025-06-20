@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FileTreeItem } from '../../FileTreeItem';
-import { pathUtils, checkExcludedStatus, hasExcludedChildren } from './TreeUtils';
-import { ContextMenu } from '../../ContextMenu/ContextMenu'
+import { pathUtils, checkExcludedStatus } from './TreeUtils';
+import { ContextMenu } from '../../ContextMenu/ContextMenu';
 
 export const TreeFolder = ({
   structure,
@@ -13,7 +13,9 @@ export const TreeFolder = ({
   onLoadChildren,
   expanded,
   onToggle,
-  containsExcluded
+  containsExcluded,
+  modules = [],
+  onAddToModule
 }) => {
   const [contextMenu, setContextMenu] = useState(null);
 
@@ -29,19 +31,44 @@ export const TreeFolder = ({
       ? `${fullPath},${fullPath}/**`
       : fullPath;
 
-    const options = [{
-      label: checkExcludedStatus({ ...item, fullPath }, excludePatterns) ?
-        `Include ${item.name}` :
-        `Exclude ${item.name}`,
-      onClick: async () => {
-        await onExclude(pattern);
-        if (expanded[currentRelativePath]) {
-          onToggle(currentRelativePath, true);
+    const isExcluded = checkExcludedStatus({ ...item, fullPath }, excludePatterns);
+
+    // Build context menu options
+    const options = [
+      // General pattern option
+      {
+        label: isExcluded ? `Include ${item.name}` : `Exclude ${item.name}`,
+        onClick: async () => {
+          await onExclude(pattern);
+          if (expanded[currentRelativePath]) {
+            onToggle(currentRelativePath, true);
+          }
         }
       }
-    }];
+    ];
 
-    // Use clientX and clientY instead of pageX and pageY
+    // Add module options if modules exist and onAddToModule is provided
+    if (modules.length > 0 && onAddToModule) {
+      // Add separator
+      options.push({ separator: true });
+      
+      // Add submenu for modules
+      options.push({
+        label: `Add to Module`,
+        submenu: modules.map(module => ({
+          label: module.name,
+          onClick: async () => {
+            console.log("yeees?")
+            await onAddToModule(module.id, pattern);
+            // Optionally refresh the tree
+            if (expanded[currentRelativePath]) {
+              onToggle(currentRelativePath, true);
+            }
+          }
+        }))
+      });
+    }
+
     setContextMenu({
       x: e.clientX,
       y: e.clientY,

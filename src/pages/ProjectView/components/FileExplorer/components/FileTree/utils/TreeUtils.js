@@ -83,8 +83,6 @@ export const hasExcludedChildren = async (item, excludePatterns, basePath) => {
             const fullPath = pathUtils.join(basePath, item.path);
             const structure = await window.electron.getFileStructure(
                 fullPath,
-                '',
-                excludePatterns,
                 basePath
             );
 

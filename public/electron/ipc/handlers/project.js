@@ -11,6 +11,7 @@ class ProjectHandlers {
         ipcMain.handle('project:list', this.getProjects.bind(this));
         ipcMain.handle('project:setPath', this.setProjectPath.bind(this));
         ipcMain.handle('project:delete', this.deleteProject.bind(this));
+        ipcMain.handle('project:deleteVersion', this.deleteVersion.bind(this)); // NEW
         ipcMain.handle('project:rename', this.renameProject.bind(this));
         ipcMain.handle('project:getSettings', (_, projectId) => this.getProjectSettings(projectId));
         ipcMain.handle('project:getPatterns', (_, projectId) => this.getProjectPatterns(projectId));
@@ -62,7 +63,7 @@ class ProjectHandlers {
 
     async deleteProject(_, projectId) {
         try {
-            const project = await this.db.getAsync('SELECT path FROM projects WHERE id = ?', [projectId]);
+            const project = await this.db.getAsync('SELECT path, parent_id FROM projects WHERE id = ?', [projectId]);
 
             await this.db.runAsync(
                 'DELETE FROM projects WHERE id = ? OR parent_id = ?',
@@ -76,6 +77,30 @@ class ProjectHandlers {
             return true;
         } catch (error) {
             console.error('Error deleting project:', error);
+            throw error;
+        }
+    }
+
+    async deleteVersion(_, versionId) {
+        try {
+            const version = await this.db.getAsync('SELECT path, parent_id, version_name FROM projects WHERE id = ?', [versionId]);
+            
+            if (!version) {
+                throw new Error('Version not found');
+            }
+
+            // Delete the version
+            await this.db.runAsync('DELETE FROM projects WHERE id = ?', [versionId]);
+
+            // Clear current path if this version was active
+            if (version.path === projectState.getCurrentPath()) {
+                projectState.clearCurrentPath();
+            }
+
+            console.log(`Deleted version "${version.version_name}" (ID: ${versionId})`);
+            return true;
+        } catch (error) {
+            console.error('Error deleting version:', error);
             throw error;
         }
     }
@@ -110,14 +135,12 @@ class ProjectHandlers {
         try {
             const result = await this.db.getAsync(`
                 SELECT 
-                    COALESCE(include_patterns, '') as include_patterns,
                     COALESCE(exclude_patterns, '') as exclude_patterns
                 FROM projects 
                 WHERE id = ?
             `, [projectId]);
 
             return {
-                include_patterns: result?.include_patterns || '',
                 exclude_patterns: result?.exclude_patterns || ''
             };
         } catch (error) {
@@ -126,25 +149,22 @@ class ProjectHandlers {
         }
     }
 
-    async updateProjectPatterns({ projectId, includePatterns, excludePatterns }) {
+    async updateProjectPatterns({ projectId, excludePatterns }) {
         try {
-            const sanitizedInclude = includePatterns || '';
             const sanitizedExclude = excludePatterns || '';
 
             await this.db.runAsync(`
                 UPDATE projects 
-                SET include_patterns = ?,
-                    exclude_patterns = ? 
+                SET exclude_patterns = ? 
                 WHERE id = ?
-            `, [sanitizedInclude, sanitizedExclude, projectId]);
+            `, [sanitizedExclude, projectId]);
 
             const updated = await this.db.getAsync(
-                'SELECT include_patterns, exclude_patterns FROM projects WHERE id = ?',
+                'SELECT exclude_patterns FROM projects WHERE id = ?',
                 [projectId]
             );
 
             return {
-                include_patterns: updated?.include_patterns || '',
                 exclude_patterns: updated?.exclude_patterns || ''
             };
         } catch (error) {
@@ -194,13 +214,12 @@ class ProjectHandlers {
             const newVersionId = await new Promise((resolve, reject) => {
                 this.db.run(
                     `INSERT INTO projects (
-                name, path, include_patterns, exclude_patterns, 
+                name, path, exclude_patterns, 
                 parent_id, version_name, respect_gitignore, ignore_dotfiles
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     [
                         mainProject.name,
                         sourceProject.path,
-                        sourceProject.include_patterns,
                         sourceProject.exclude_patterns,
                         mainProjectId, // Always link to the main project
                         versionName,

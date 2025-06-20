@@ -1,12 +1,22 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import ProjectListPage from './pages/ProjectList/ProjectListPage';
 import ProjectView from './pages/ProjectView/ProjectView';
+import DependencyGraphApp from './DependencyGraphApp';
 import { SizeWarningDialog } from './pages/ProjectView/components/SizeWarningDialog/SizeWarningDialog';
 import { useProjects } from './hooks/useProjects';
-import { usePatterns } from './hooks/usePatterns';
 import { useAnalysis } from './hooks/useAnalysis';
 
 function App() {
+  // Check if this is a dependency graph window immediately
+  const isDependencyGraphWindow = window.location.hash.startsWith('#dependency-graph');
+  
+  // If it's a dependency graph window, render it directly without initializing other hooks, because .electron methods wont be available
+  if (isDependencyGraphWindow) {
+    return <DependencyGraphApp />;
+  }
+
+  const [currentView, setCurrentView] = useState('main');
+
   const {
     projects,
     selectedProject,
@@ -17,18 +27,11 @@ function App() {
     loadProjects,
     handleSelectProject,
     handleDeleteProject,
+    handleDeleteVersion, // NEW: Add version deletion handler
     handleRenameProject,
     handleVersionSelect,
     handleVersionCreated
   } = useProjects();
-
-  const {
-    includePatterns,
-    excludePatterns,
-    loadProjectPatterns,
-    handleIncludeChange,
-    handleExcludePatternAdd
-  } = usePatterns();
 
   const {
     result,
@@ -42,18 +45,27 @@ function App() {
     performAnalysis
   } = useAnalysis();
 
+  // Simple URL-based routing (this is now redundant but kept for consistency)
   useEffect(() => {
-    if (selectedProject) {
-      loadProjectPatterns(selectedProject.id);
-    }
-  }, [selectedProject, loadProjectPatterns]);
+    const checkRoute = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#dependency-graph')) {
+        setCurrentView('dependency-graph');
+      } else {
+        setCurrentView('main');
+      }
+    };
+
+    checkRoute();
+    window.addEventListener('hashchange', checkRoute);
+    return () => window.removeEventListener('hashchange', checkRoute);
+  }, []);
 
   const handleCreateProject = async (name) => {
     const newProjectId = await window.electron.createProject(name);
     await loadProjects();
     const newProject = (await window.electron.getProjects()).find(p => p.id === newProjectId);
     await handleSelectProject(newProject);
-    await loadProjectPatterns(newProjectId);
   };
 
   const handleFolderSelect = async () => {
@@ -72,6 +84,27 @@ function App() {
     }
   };
 
+  // NEW: Handle version deletion with proper error handling
+  const handleVersionDeletedWithErrorHandling = async (mainProjectId) => {
+    try {
+      await handleDeleteVersion(mainProjectId);
+    } catch (error) {
+      console.error('Failed to delete version:', error);
+      alert('Failed to delete version: ' + error.message);
+    }
+  };
+
+  // Enhanced delete handler with proper error handling
+  const handleDeleteProjectWithErrorHandling = async (projectId) => {
+    try {
+      await handleDeleteProject(projectId);
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      alert('Failed to delete project: ' + error.message);
+    }
+  };
+
+  // Main application view
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="min-h-screen bg-gray-900 text-gray-100 p-6 overflow-auto">
@@ -81,32 +114,25 @@ function App() {
               projects={projects}
               onCreateProject={handleCreateProject}
               onSelectProject={handleSelectProject}
-              onDeleteProject={handleDeleteProject}
+              onDeleteProject={handleDeleteProjectWithErrorHandling}
               onRenameProject={handleRenameProject}
             />
           ) : (
             <ProjectView
+              key={`project-view-${selectedProject.id}`}
               project={selectedProject}
               versions={versions}
               projectPath={projectPath}
-              includePatterns={includePatterns}
-              excludePatterns={excludePatterns}
               isAnalyzing={isAnalyzing}
               isCheckingSize={isCheckingSize}
               result={result}
               fileSizeData={fileSizeData}
               onBack={() => setSelectedProject(null)}
               onFolderSelect={handleFolderSelect}
-              onAnalyze={() => handleAnalyze(
-                selectedProject.id,
-                projectPath,
-                includePatterns,
-                excludePatterns
-              )}
-              onIncludeChange={(e) => handleIncludeChange(e, selectedProject.id)}
-              onExcludeChange={(patterns) => handleExcludePatternAdd(patterns, selectedProject.id)}
+              onAnalyze={(projectId, path, patterns) => handleAnalyze(projectId, path, patterns)}
               onVersionSelect={handleVersionSelect}
               onVersionCreated={handleVersionCreated}
+              onVersionDeleted={handleVersionDeletedWithErrorHandling} // NEW: Pass version deletion handler
             />
           )}
         </div>
@@ -121,8 +147,7 @@ function App() {
             performAnalysis(
               selectedProject.id,
               projectPath,
-              includePatterns,
-              excludePatterns
+              '' // Patterns will be resolved in the analysis handler
             );
           }}
         />
