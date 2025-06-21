@@ -62,11 +62,11 @@ class PatternResolutionService {
 
         return await this.db.allAsync(`
             SELECT m.id, m.name, m.description,
-                   COALESCE(vm.is_included, 1) as is_included
+                   COALESCE(vm.is_included, 0) as is_included
             FROM modules m
             LEFT JOIN version_modules vm ON m.id = vm.module_id AND vm.version_id = ?
             WHERE m.project_id = ?
-            AND COALESCE(vm.is_included, 1) = 1
+            AND COALESCE(vm.is_included, 0) = 1
         `, [projectId, mainProjectId]);
     }
 

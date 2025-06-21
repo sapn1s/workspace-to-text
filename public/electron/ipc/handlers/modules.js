@@ -313,7 +313,7 @@ class ModuleHandlers {
             const result = await Promise.all(modules.map(async module => {
                 // Check if this module has a specific inclusion state for this version
                 const hasState = inclusionMap.has(module.id);
-                const isIncluded = hasState ? inclusionMap.get(module.id) : 1; // Default to included (1) if no state
+                const isIncluded = hasState ? inclusionMap.get(module.id) : 0; // Default to not included (0) if no state
 
                 // Get patterns
                 const patterns = await this.getPatterns(null, module.id);

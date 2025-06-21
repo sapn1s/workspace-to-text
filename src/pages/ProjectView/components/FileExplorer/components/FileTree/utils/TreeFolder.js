@@ -58,7 +58,6 @@ export const TreeFolder = ({
         submenu: modules.map(module => ({
           label: module.name,
           onClick: async () => {
-            console.log("yeees?")
             await onAddToModule(module.id, pattern);
             // Optionally refresh the tree
             if (expanded[currentRelativePath]) {

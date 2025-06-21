@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2025-06-22
+
+### Fixed
+- Modules are disabled per version by default
+
 ## [2.0.0] - 2025-06-20
 
 ### Added

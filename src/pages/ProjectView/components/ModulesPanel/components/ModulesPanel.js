@@ -27,22 +27,17 @@ export function ModulesPanel({
             if (!project?.id || !mainProjectId) return;
             
             try {
-                console.log(`Loading version modules for version ID: ${project.id}, main project ID: ${mainProjectId}`);
                 const versionModules = await window.electron.modules.getVersionModules(project.id);
-                
-                console.log('Retrieved version modules:', versionModules.length);
-                
                 const versionMap = new Map();
                 versionModules.forEach(module => {
                     // Check is_included is not null/undefined before setting
                     if (module.is_included !== undefined && module.is_included !== null) {
                         versionMap.set(module.id, Boolean(module.is_included));
                     } else {
-                        // Default to true if not explicitly set
-                        versionMap.set(module.id, true);
+                        // Default to false if not explicitly set
+                        versionMap.set(module.id, false);
                     }
                 });
-                
                 setModuleVersions(versionMap);
             } catch (error) {
                 console.error('Error loading version modules:', error);
@@ -50,7 +45,7 @@ export function ModulesPanel({
         };
 
         loadVersionModules();
-    }, [project?.id, mainProjectId, refreshKey]); // Add refreshKey as dependency
+    }, [project?.id, mainProjectId, refreshKey]);
 
     // Force refresh when modules change
     useEffect(() => {
@@ -103,7 +98,6 @@ export function ModulesPanel({
     };
 
     const handleUpdateModule = async (moduleData) => {
-        console.log("really?")
         try {
             await onModuleUpdate(moduleData);
             

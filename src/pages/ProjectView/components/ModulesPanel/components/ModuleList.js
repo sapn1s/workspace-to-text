@@ -32,7 +32,7 @@ export function ModuleList({
             onToggleExpand={() => toggleExpand(module.id)}
             onEdit={() => onEdit(module)}
             onDelete={() => onDelete(module)} // Pass full module object instead of just ID
-            isIncluded={moduleVersions.get(module.id) ?? true}
+            isIncluded={moduleVersions.get(module.id) ?? false}
             onToggleInclude={() => onModuleToggle(module.id)}
           />
         ))}

@@ -267,10 +267,10 @@ class ProjectHandlers {
 
             // Copy all module states to the new version
             for (const module of modules) {
-                // Default to included (true) if not found in the source version
+                // Default to not included (false) if not found in the source version
                 const isIncluded = moduleStates.has(module.id)
                     ? moduleStates.get(module.id)
-                    : 1;
+                    : 0;
 
                 await this.db.runAsync(`
               INSERT INTO version_modules (version_id, module_id, is_included)

@@ -22,6 +22,71 @@ async function addColumnIfNotExists(db, table, column, type, defaultValue) {
     }
 }
 
+async function migrateVersionModules(db) {
+    try {
+        // Get current schema version
+        let schemaVersion = 0;
+        try {
+            const result = await db.getAsync(`SELECT value FROM app_settings WHERE key = 'schema_version'`);
+            schemaVersion = result ? parseInt(result.value) : 0;
+        } catch (error) {
+            // Could not read schema version (likely new installation), defaulting to 0
+        }
+
+        // If schema version is less than 3, we need to recreate version_modules table
+        if (schemaVersion < 3) {
+            // Check if version_modules table exists
+            const tableExists = await db.getAsync(`
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='version_modules'
+            `);
+
+            if (tableExists) {
+                // Step 1: Create backup table with existing data (preserve current values)
+                await db.runAsync(`
+                    CREATE TABLE version_modules_backup AS 
+                    SELECT version_id, module_id, is_included 
+                    FROM version_modules
+                `);
+                
+                // Step 2: Drop old table
+                await db.runAsync(`DROP TABLE version_modules`);
+                
+                // Step 3: Create new table with correct default
+                await db.runAsync(`
+                    CREATE TABLE version_modules (
+                        version_id INTEGER,
+                        module_id INTEGER,
+                        is_included BOOLEAN DEFAULT 0,
+                        FOREIGN KEY(version_id) REFERENCES projects(id) ON DELETE CASCADE,
+                        FOREIGN KEY(module_id) REFERENCES modules(id) ON DELETE CASCADE,
+                        PRIMARY KEY(version_id, module_id)
+                    )
+                `);
+                
+                // Step 4: Restore data from backup
+                await db.runAsync(`
+                    INSERT INTO version_modules (version_id, module_id, is_included)
+                    SELECT version_id, module_id, is_included 
+                    FROM version_modules_backup
+                `);
+                
+                // Step 5: Drop backup table
+                await db.runAsync(`DROP TABLE version_modules_backup`);
+            }
+
+            // Update schema version to 3
+            await db.runAsync(`
+                INSERT OR REPLACE INTO app_settings (key, value) 
+                VALUES ('schema_version', '3')
+            `);
+        }
+    } catch (error) {
+        console.error('Error during version_modules migration:', error);
+        // Don't throw here as this might be a new installation
+    }
+}
+
 async function initModulesTables(db) {
     // Create modules table
     await db.runAsync(`
@@ -106,6 +171,9 @@ async function initDatabase() {
 
                 // Initialize modules tables
                 await initModulesTables(db);
+
+                // Run migrations after all tables are created
+                await migrateVersionModules(db);
 
                 resolve(db);
             } catch (error) {

@@ -4,7 +4,6 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { Dialog } from '../../../../../components/common/Dialog';
 
 export function ModuleDeleteDialog({ module, onConfirm, onCancel }) {
-    console.log("module to el is" , module)
   return (
     <Dialog
       title="Delete Module"
