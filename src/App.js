@@ -1,21 +1,36 @@
+// src/App.js - Updated with tab management
 import React, { useEffect, useState } from 'react';
 import ProjectListPage from './pages/ProjectList/ProjectListPage';
 import ProjectView from './pages/ProjectView/ProjectView';
 import DependencyGraphApp from './DependencyGraphApp';
 import { SizeWarningDialog } from './pages/ProjectView/components/SizeWarningDialog/SizeWarningDialog';
+import { TabBar } from './components/common/TabBar';
 import { useProjects } from './hooks/useProjects';
 import { useAnalysis } from './hooks/useAnalysis';
+import { useTabManagement } from './hooks/useTabManagement';
 
 function App() {
   // Check if this is a dependency graph window immediately
   const isDependencyGraphWindow = window.location.hash.startsWith('#dependency-graph');
   
-  // If it's a dependency graph window, render it directly without initializing other hooks, because .electron methods wont be available
+  // If it's a dependency graph window, render it directly without initializing other hooks
   if (isDependencyGraphWindow) {
     return <DependencyGraphApp />;
   }
 
-  const [currentView, setCurrentView] = useState('main');
+  const [showProjectList, setShowProjectList] = useState(false);
+  const [isLoadingTabProject, setIsLoadingTabProject] = useState(false);
+
+  const {
+    tabs,
+    activeTabId,
+    activeTab,
+    createOrUpdateTab,
+    updateTabVersion,
+    closeTab,
+    switchToTab,
+    closeAllTabs
+  } = useTabManagement();
 
   const {
     projects,
@@ -27,7 +42,7 @@ function App() {
     loadProjects,
     handleSelectProject,
     handleDeleteProject,
-    handleDeleteVersion, // NEW: Add version deletion handler
+    handleDeleteVersion,
     handleRenameProject,
     handleVersionSelect,
     handleVersionCreated
@@ -45,27 +60,53 @@ function App() {
     performAnalysis
   } = useAnalysis();
 
-  // Simple URL-based routing (this is now redundant but kept for consistency)
+  // Load project when switching tabs
   useEffect(() => {
-    const checkRoute = () => {
-      const hash = window.location.hash;
-      if (hash.startsWith('#dependency-graph')) {
-        setCurrentView('dependency-graph');
-      } else {
-        setCurrentView('main');
+    const loadTabProject = async () => {
+      if (!activeTab || !projects.length) return;
+
+      setIsLoadingTabProject(true);
+      
+      try {
+        // Find the project/version to load
+        const projectToLoad = projects.find(p => p.id === activeTab.versionId);
+        
+        if (projectToLoad) {
+          console.log(`Loading tab project: ${projectToLoad.name} (ID: ${projectToLoad.id})`);
+          await handleSelectProject(projectToLoad);
+        } else {
+          console.warn(`Project with ID ${activeTab.versionId} not found in projects list`);
+          // Remove this tab as the project no longer exists
+          closeTab(activeTab.id);
+        }
+      } catch (error) {
+        console.error('Error loading tab project:', error);
+        closeTab(activeTab.id);
+      } finally {
+        setIsLoadingTabProject(false);
       }
     };
 
-    checkRoute();
-    window.addEventListener('hashchange', checkRoute);
-    return () => window.removeEventListener('hashchange', checkRoute);
-  }, []);
+    loadTabProject();
+  }, [activeTab?.versionId, projects.length]);
 
+  // Handle project selection from project list
   const handleCreateProject = async (name) => {
     const newProjectId = await window.electron.createProject(name);
     await loadProjects();
     const newProject = (await window.electron.getProjects()).find(p => p.id === newProjectId);
-    await handleSelectProject(newProject);
+    
+    if (newProject) {
+      await handleSelectProject(newProject);
+      createOrUpdateTab(newProject);
+      setShowProjectList(false);
+    }
+  };
+
+  const handleSelectProjectFromList = async (project) => {
+    await handleSelectProject(project);
+    createOrUpdateTab(project);
+    setShowProjectList(false);
   };
 
   const handleFolderSelect = async () => {
@@ -84,40 +125,115 @@ function App() {
     }
   };
 
-  // NEW: Handle version deletion with proper error handling
-  const handleVersionDeletedWithErrorHandling = async (mainProjectId) => {
+  const handleVersionSelectWithTab = async (version) => {
+    await handleVersionSelect(version);
+    updateTabVersion(version.id, version.version_name || 'Main');
+  };
+
+  const handleVersionCreatedWithTab = async (mainProjectId, newVersionId) => {
+    await handleVersionCreated(mainProjectId, newVersionId);
+    
+    // Update the tab to point to the new version
+    if (activeTab) {
+      const allProjects = await window.electron.getProjects();
+      const newVersion = allProjects.find(p => p.id === newVersionId);
+      if (newVersion) {
+        updateTabVersion(newVersionId, newVersion.version_name || 'Main');
+      }
+    }
+  };
+
+  const handleVersionDeletedWithTab = async (mainProjectId) => {
     try {
       await handleDeleteVersion(mainProjectId);
+      
+      // If the deleted version was in the current tab, update tab to main project
+      if (activeTab && selectedProject?.parent_id === mainProjectId) {
+        const allProjects = await window.electron.getProjects();
+        const mainProject = allProjects.find(p => p.id === mainProjectId);
+        if (mainProject) {
+          updateTabVersion(mainProjectId, 'Main');
+        }
+      }
     } catch (error) {
       console.error('Failed to delete version:', error);
       alert('Failed to delete version: ' + error.message);
     }
   };
 
-  // Enhanced delete handler with proper error handling
   const handleDeleteProjectWithErrorHandling = async (projectId) => {
     try {
       await handleDeleteProject(projectId);
+      
+      // Close any tabs for this project or its versions
+      const projectTabs = tabs.filter(tab => 
+        tab.projectId === projectId || 
+        projects.find(p => p.id === tab.versionId)?.parent_id === projectId
+      );
+      
+      projectTabs.forEach(tab => closeTab(tab.id));
     } catch (error) {
       console.error('Failed to delete project:', error);
       alert('Failed to delete project: ' + error.message);
     }
   };
 
-  // Main application view
+  const handleTabClick = async (tabId) => {
+    if (tabId === activeTabId) return;
+    switchToTab(tabId);
+  };
+
+  const handleNewTab = () => {
+    setShowProjectList(true);
+  };
+
+  const handleBackToProjectList = () => {
+    setShowProjectList(true);
+  };
+
+  // Determine what to show
+  const hasActiveTabs = tabs.length > 0;
+  const shouldShowProjectView = !showProjectList && selectedProject && !isLoadingTabProject;
+  const shouldShowProjectList = showProjectList || (!hasActiveTabs && !selectedProject);
+
   return (
     <div className="min-h-screen bg-gray-900">
+      {/* Tab Bar - only show if we have tabs */}
+      {hasActiveTabs && (
+        <TabBar
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onTabClick={handleTabClick}
+          onTabClose={closeTab}
+          onNewTab={handleNewTab}
+        />
+      )}
+
       <div className="min-h-screen bg-gray-900 text-gray-100 p-6 overflow-auto">
         <div className="w-full mx-auto">
-          {!selectedProject ? (
+          {/* Loading state for tab switching */}
+          {isLoadingTabProject && (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-400">Loading project...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Project List */}
+          {shouldShowProjectList && !isLoadingTabProject && (
             <ProjectListPage
               projects={projects}
               onCreateProject={handleCreateProject}
-              onSelectProject={handleSelectProject}
+              onSelectProject={handleSelectProjectFromList}
               onDeleteProject={handleDeleteProjectWithErrorHandling}
               onRenameProject={handleRenameProject}
             />
-          ) : (
+          )}
+
+          {/* Project View */}
+          {shouldShowProjectView && (
             <ProjectView
               key={`project-view-${selectedProject.id}`}
               project={selectedProject}
@@ -127,17 +243,18 @@ function App() {
               isCheckingSize={isCheckingSize}
               result={result}
               fileSizeData={fileSizeData}
-              onBack={() => setSelectedProject(null)}
+              onBack={handleBackToProjectList}
               onFolderSelect={handleFolderSelect}
               onAnalyze={(projectId, path, patterns) => handleAnalyze(projectId, path, patterns)}
-              onVersionSelect={handleVersionSelect}
-              onVersionCreated={handleVersionCreated}
-              onVersionDeleted={handleVersionDeletedWithErrorHandling} // NEW: Pass version deletion handler
+              onVersionSelect={handleVersionSelectWithTab}
+              onVersionCreated={handleVersionCreatedWithTab}
+              onVersionDeleted={handleVersionDeletedWithTab}
             />
           )}
         </div>
       </div>
 
+      {/* Size Warning Dialog */}
       {showSizeWarning && (
         <SizeWarningDialog
           sizeStats={sizeScanResult}
@@ -147,7 +264,7 @@ function App() {
             performAnalysis(
               selectedProject.id,
               projectPath,
-              '' // Patterns will be resolved in the analysis handler
+              ''
             );
           }}
         />

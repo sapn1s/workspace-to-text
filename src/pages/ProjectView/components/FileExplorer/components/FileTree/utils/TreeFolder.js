@@ -3,6 +3,42 @@ import { FileTreeItem } from '../../FileTreeItem';
 import { pathUtils, checkExcludedStatus } from './TreeUtils';
 import { ContextMenu } from '../../ContextMenu/ContextMenu';
 
+// Helper function to normalize path and remove redundant ./ components
+const normalizePath = (inputPath) => {
+  if (!inputPath) return '';
+  
+  // Convert all separators to forward slashes
+  let normalized = inputPath.replace(/\\/g, '/');
+  
+  // Remove redundant ./ at the beginning
+  normalized = normalized.replace(/^\.\/+/, '');
+  
+  // Remove redundant /./ in the middle
+  normalized = normalized.replace(/\/\.\/+/g, '/');
+  
+  // Remove trailing slashes except for root
+  normalized = normalized.replace(/\/+$/, '');
+  
+  return normalized;
+};
+
+// Helper function to safely join paths
+const safePathJoin = (basePath, relativePath) => {
+  if (!basePath || !relativePath) return basePath || relativePath || '';
+  
+  // Normalize both paths first
+  const cleanBasePath = normalizePath(basePath);
+  const cleanRelativePath = normalizePath(relativePath);
+  
+  // If the relative path is empty after normalization, just return base
+  if (!cleanRelativePath || cleanRelativePath === '.') {
+    return cleanBasePath;
+  }
+  
+  // Join them with a single separator, avoiding double slashes
+  return `${cleanBasePath}/${cleanRelativePath}`.replace(/\/+/g, '/');
+};
+
 export const TreeFolder = ({
   structure,
   level,
@@ -15,7 +51,9 @@ export const TreeFolder = ({
   onToggle,
   containsExcluded,
   modules = [],
-  onAddToModule
+  onAddToModule,
+  onAnalyzeContext,
+  onAddToCurrentAnalysis
 }) => {
   const [contextMenu, setContextMenu] = useState(null);
 
@@ -51,7 +89,7 @@ export const TreeFolder = ({
     if (modules.length > 0 && onAddToModule) {
       // Add separator
       options.push({ separator: true });
-      
+
       // Add submenu for modules
       options.push({
         label: `Add to Module`,
@@ -67,6 +105,62 @@ export const TreeFolder = ({
         }))
       });
     }
+
+    options.push({
+      label: 'Analysis',
+      submenu: [
+        {
+          label: 'Analyze',
+          onClick: async () => {
+            try {
+              console.log('Starting context analysis for:', fullPath);
+              
+              // FIXED: Properly construct the target path
+              let targetPath;
+              if (item.type === 'file') {
+                // For files, construct the absolute path properly
+                targetPath = safePathJoin(basePath, fullPath);
+                console.log('File analysis - absolute path:', targetPath);
+              } else {
+                // For folders, we can use the relative path as before
+                targetPath = fullPath;
+                console.log('Folder analysis - relative path:', targetPath);
+              }
+              
+              await onAnalyzeContext(targetPath, item.name);
+            } catch (error) {
+              console.error('Context analysis failed:', error);
+              alert(`Analysis failed: ${error.message}`);
+            }
+          }
+        },
+        {
+          label: 'Add to current analysis',
+          onClick: async () => {
+            try {
+              console.log('Adding to current analysis:', fullPath);
+              
+              // FIXED: Properly construct the target path
+              let targetPath;
+              if (item.type === 'file') {
+                // For files, construct the absolute path properly
+                targetPath = safePathJoin(basePath, fullPath);
+                console.log('File add to analysis - absolute path:', targetPath);
+              } else {
+                // For folders, use the relative path as before
+                targetPath = fullPath;
+                console.log('Folder add to analysis - relative path:', targetPath);
+              }
+              
+              await onAddToCurrentAnalysis(targetPath, item.name);
+            } catch (error) {
+              console.error('Add to analysis failed:', error);
+              alert(`Add to analysis failed: ${error.message}`);
+            }
+          }
+        }
+      ]
+    });
 
     setContextMenu({
       x: e.clientX,

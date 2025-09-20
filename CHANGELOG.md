@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2025-09-20
+
+### Added
+- **LLM Prompts System**
+  - Context Optimizer for file exclusion based on feature development
+  - Custom Prompts for reusable prompt templates
+
 ## [2.0.1] - 2025-06-22
 
 ### Fixed
@@ -65,21 +72,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2025-05-15
 
 ### Added
-- 🔍 **Enhanced Search Functionality**
+- Enhanced Search Functionality
   - Project search in the main project list page
   - Exclusion search for better pattern management
 
-- 💬 **Improved User Experience**
+- Improved User Experience
   - Project deletion confirmation dialog for safer project management
 
 ### Improved
-- 🏗️ **Frontend Architecture**
+- Frontend Architecture
   - Restructured frontend file organization
   - Each page/component now has its own dedicated folder
   - Better code maintainability and organization
 
 ### Fixed
-- 🛠️ **Pattern Management**
+- Pattern Management
   - Temporarily hiding "include patterns" option due to functionality issues
   - Note: Same functionality can be achieved using exclude patterns only
 - Various bug fixes and stability improvements
@@ -87,54 +94,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2025-02-22
 
 ### Added
-- 📊 **File Size Analysis**
+- File Size Analysis
   - New analysis tab for visualizing file sizes
   - Detailed metrics for project files
   - Interactive size data explorer
 
-- 🖥️ **Installer Support**
+- Installer Support
   - Windows installer package (NSIS)
   - Customizable installation options
   - Desktop and start menu shortcuts
   - Proper uninstaller with cleanup
 
-- 📝 **Extended File Format Support**
+- Extended File Format Support
   - Expanded text file type recognition (100+ formats)
   - Support for additional programming languages
   - Better handling of configuration files
 
 ### Improved
-- 🔄 **Version Management**
+- Version Management
   - Create versions from any project or version
   - Better parent-child relationship handling
   - Enhanced version switching UX
 
-- 🧰 **Build Process**
+- Build Process
   - Simplified release workflow
   - Improved artifact naming and publishing
 
-- 🖌️ **UI Enhancements**
+- UI Enhancements
   - Tabbed interface for output and analysis views
   - Improved copy functionality
 
 ## [1.1.0] - 2024-11-27
 
 ### Added
-- 🗂️ Project Management System
+- Project Management System
   - Project-specific settings
 
-- 📁 Enhanced File Explorer
+- Enhanced File Explorer
   - Interactive file tree visualization
   - Context menu for file/folder actions
   - Real-time directory scanning
   - Visual exclusion indicators
 
-- 🔍 Advanced Filtering System
+- Advanced Filtering System
   - Common exclusion patterns library
   - Built-in pattern suggestions
   - Visual feedback for excluded items
 
-- ⚡ Performance Features
+- Performance Features
   - Size limit warnings for large projects
   - Directory size analysis
   - Memory optimization

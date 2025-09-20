@@ -15,7 +15,9 @@ export const FileTree = React.memo(({
   onExpansionStateChange,
   // New props for module functionality
   modules = [],
-  onAddToModule
+  onAddToModule,
+  onAnalyzeContext,
+  onAddToCurrentAnalysis
 }) => {
 
   const [expanded, setExpanded] = useState({});
@@ -23,12 +25,12 @@ export const FileTree = React.memo(({
   const [localStructure, setLocalStructure] = useState(structure);
   const [containsExcluded, setContainsExcluded] = useState(false);
 
-  const currentRelativePath = level === 0 
+  const currentRelativePath = level === 0
     ? structure?.path
     : pathUtils.join(parentPath, structure?.name || '');
 
   // First update localStructure with the incoming structure and computed fullPath
-  useEffect(() => {    
+  useEffect(() => {
     setLocalStructure({
       ...structure,
       fullPath: currentRelativePath,
@@ -40,16 +42,16 @@ export const FileTree = React.memo(({
   useEffect(() => {
     const hasPreservedState = Object.keys(preservedExpansionState).length > 0;
     const hasCurrentState = Object.keys(expanded).length > 0;
-    
+
     if (hasPreservedState && !hasCurrentState) {
       setExpanded(preservedExpansionState);
     } else if (!hasPreservedState && !hasCurrentState) {
       const newExpanded = {};
-      
+
       if (level === 0 || initiallyExpanded) {
         newExpanded[currentRelativePath] = true;
       }
-      
+
       setExpanded(newExpanded);
     }
   }, [structure?.path]);
@@ -118,7 +120,7 @@ export const FileTree = React.memo(({
         absolutePath,
         basePath
       );
-      
+
       if (children && children.children) {
         const updatedChildren = children.children.map(child => ({
           ...child,
@@ -162,6 +164,8 @@ export const FileTree = React.memo(({
         // Pass through module props
         modules={modules}
         onAddToModule={onAddToModule}
+        onAnalyzeContext={onAnalyzeContext}
+        onAddToCurrentAnalysis={onAddToCurrentAnalysis}
       />
     ));
   };
@@ -182,6 +186,8 @@ export const FileTree = React.memo(({
         // Pass module props to TreeFolder
         modules={modules}
         onAddToModule={onAddToModule}
+        onAnalyzeContext={onAnalyzeContext}
+        onAddToCurrentAnalysis={onAddToCurrentAnalysis}
       />
       {localStructure.type === 'folder' && expanded[currentRelativePath] && (
         <div className="pl-2">

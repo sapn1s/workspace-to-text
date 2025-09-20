@@ -68,9 +68,19 @@ function normalizePattern(pattern) {
 }
 
 function getFileContent(filePath) {
+    if (!fsSync.existsSync(filePath)) {
+        return `Error: File does not exist: ${filePath}`;
+    }
+
+    const stats = fsSync.statSync(filePath);
+    if (!stats.isFile()) {
+        return `Error: Path is not a file: ${filePath}`;
+    }
+
     if (!isTextFile(filePath)) {
         return '[Binary file not displayed]';
     }
+
     try {
         return fsSync.readFileSync(filePath, 'utf8');
     } catch (error) {

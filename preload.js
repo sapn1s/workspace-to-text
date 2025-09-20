@@ -21,6 +21,8 @@ const ipcApi = {
         ipcRenderer.invoke('analysis:analyze', { projectId, path }),
     checkFolderSize: (projectId, path) =>
         ipcRenderer.invoke('analysis:checkSize', { projectId, folderPath: path }),
+    analyzeProjectWithTempExclusions: (projectId, path, tempExclusions) =>
+        ipcRenderer.invoke('analysis:analyzeWithTempExclusions', { projectId, path, tempExclusions }),
 
     // File system operations
     openDirectory: () => ipcRenderer.invoke('fs:openDirectory'),
@@ -65,6 +67,14 @@ const ipcApi = {
         // Version module management
         setVersionInclusion: (data) => ipcRenderer.invoke('modules:setVersionInclusion', data),
         getVersionModules: (versionId) => ipcRenderer.invoke('modules:getVersionModules', versionId)
+    },
+
+    contextAnalysis: {
+        analyze: (projectId, path, relativePath) =>
+            ipcRenderer.invoke('analysis:contextAnalyze', { projectId, path, relativePath }),
+        // SIMPLIFIED: Back to simple call
+        addToCurrent: (projectId, path, relativePath) =>
+            ipcRenderer.invoke('analysis:addToCurrent', { projectId, path, relativePath })
     },
 
     // Dependency analysis operations

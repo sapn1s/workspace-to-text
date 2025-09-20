@@ -54,14 +54,77 @@ function getAllFilePaths(dir, rootDir, ig) {
 }
 
 /**
+ * Analyze a single file
+ * @param {string} filePath - Path to the file
+ * @param {string} rootDir - Root directory for relative path calculation
+ * @returns {Object} Analysis result with text and file size data
+ */
+function analyzeSingleFile(filePath, rootDir) {
+    const fileSizeData = [];
+    
+    if (!fsSync.existsSync(filePath)) {
+        throw new Error(`File does not exist: ${filePath}`);
+    }
+
+    const stats = fsSync.statSync(filePath);
+    if (!stats.isFile()) {
+        throw new Error(`Path is not a file: ${filePath}`);
+    }
+
+    if (!isTextFile(filePath)) {
+        throw new Error(`File is not a text file: ${filePath}`);
+    }
+
+    const relativePath = normalizeRelativePath(filePath, rootDir);
+    const content = getFileContent(filePath);
+    
+    let output = `Project path: ${rootDir}\n\n`;
+    output += 'File Analysis:\n';
+    output += `📄 ${path.basename(filePath)}\n\n`;
+    output += 'File Contents:\n';
+    output += `\n--- ${relativePath} ---\n`;
+    output += content;
+    output += '\n';
+    
+    // Store file size data
+    fileSizeData.push({
+        path: relativePath,
+        name: path.basename(filePath),
+        directory: path.dirname(relativePath),
+        charCount: content.length
+    });
+
+    return {
+        text: output,
+        fileSizeData
+    };
+}
+
+/**
  * Analyze project using resolved patterns or basic settings
- * @param {string} rootDir - Root directory to analyze
+ * @param {string} rootDir - Root directory or file path to analyze
  * @param {Object} resolvedPatterns - Resolved patterns from PatternResolutionService
  * @param {string} fallbackExcludePatterns - Fallback exclude patterns (legacy)
  * @param {Object} settings - Basic settings for fallback
  * @returns {Object} Analysis result with text and file size data
  */
 function analyzeProject(rootDir, resolvedPatterns = null, fallbackExcludePatterns = '', settings = {}) {
+    // Check if the path is a file or directory
+    if (!fsSync.existsSync(rootDir)) {
+        throw new Error(`Path does not exist: ${rootDir}`);
+    }
+
+    const stats = fsSync.statSync(rootDir);
+    
+    // If it's a single file, handle it differently
+    if (stats.isFile()) {
+        console.log('Analyzing single file:', rootDir);
+        // For single file analysis, use the directory containing the file as root
+        const fileDir = path.dirname(rootDir);
+        return analyzeSingleFile(rootDir, fileDir);
+    }
+
+    // Original directory analysis logic
     const fileSizeData = []; // Array to store file size data
     let ig;
 
