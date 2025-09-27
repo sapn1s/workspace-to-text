@@ -1,4 +1,4 @@
-// public/electron/ipc/handlers/dependencies.js
+// electron/ipc/handlers/dependencies.js
 
 const { ipcMain } = require('electron');
 const { analyzeDependencies } = require('../../dependencyAnalyzer');

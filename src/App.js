@@ -12,7 +12,7 @@ import { useTabManagement } from './hooks/useTabManagement';
 function App() {
   // Check if this is a dependency graph window immediately
   const isDependencyGraphWindow = window.location.hash.startsWith('#dependency-graph');
-  
+
   // If it's a dependency graph window, render it directly without initializing other hooks
   if (isDependencyGraphWindow) {
     return <DependencyGraphApp />;
@@ -37,6 +37,7 @@ function App() {
     selectedProject,
     versions,
     projectPath,
+    mainProjectId,
     setProjectPath,
     setSelectedProject,
     loadProjects,
@@ -45,7 +46,8 @@ function App() {
     handleDeleteVersion,
     handleRenameProject,
     handleVersionSelect,
-    handleVersionCreated
+    handleVersionCreated,
+    handleVersionUpdated
   } = useProjects();
 
   const {
@@ -66,11 +68,11 @@ function App() {
       if (!activeTab || !projects.length) return;
 
       setIsLoadingTabProject(true);
-      
+
       try {
         // Find the project/version to load
         const projectToLoad = projects.find(p => p.id === activeTab.versionId);
-        
+
         if (projectToLoad) {
           console.log(`Loading tab project: ${projectToLoad.name} (ID: ${projectToLoad.id})`);
           await handleSelectProject(projectToLoad);
@@ -95,7 +97,7 @@ function App() {
     const newProjectId = await window.electron.createProject(name);
     await loadProjects();
     const newProject = (await window.electron.getProjects()).find(p => p.id === newProjectId);
-    
+
     if (newProject) {
       await handleSelectProject(newProject);
       createOrUpdateTab(newProject);
@@ -130,9 +132,32 @@ function App() {
     updateTabVersion(version.id, version.version_name || 'Main');
   };
 
+  const handleVersionUpdatedWithTab = async () => {
+    try {
+      // Use the existing handleVersionUpdated from useProjects hook
+      await handleVersionUpdated();
+
+      // Update the tab title if needed (the project name or version might have changed)
+      if (activeTab && selectedProject) {
+        const allProjects = await window.electron.getProjects();
+        const updatedProject = allProjects.find(p => p.id === selectedProject.id);
+
+        if (updatedProject) {
+          updateTabVersion(
+            updatedProject.id,
+            updatedProject.version_name || 'Main'
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to handle version update:', error);
+      alert('Failed to update version: ' + error.message);
+    }
+  };
+
   const handleVersionCreatedWithTab = async (mainProjectId, newVersionId) => {
     await handleVersionCreated(mainProjectId, newVersionId);
-    
+
     // Update the tab to point to the new version
     if (activeTab) {
       const allProjects = await window.electron.getProjects();
@@ -146,7 +171,7 @@ function App() {
   const handleVersionDeletedWithTab = async (mainProjectId) => {
     try {
       await handleDeleteVersion(mainProjectId);
-      
+
       // If the deleted version was in the current tab, update tab to main project
       if (activeTab && selectedProject?.parent_id === mainProjectId) {
         const allProjects = await window.electron.getProjects();
@@ -164,13 +189,13 @@ function App() {
   const handleDeleteProjectWithErrorHandling = async (projectId) => {
     try {
       await handleDeleteProject(projectId);
-      
+
       // Close any tabs for this project or its versions
-      const projectTabs = tabs.filter(tab => 
-        tab.projectId === projectId || 
+      const projectTabs = tabs.filter(tab =>
+        tab.projectId === projectId ||
         projects.find(p => p.id === tab.versionId)?.parent_id === projectId
       );
-      
+
       projectTabs.forEach(tab => closeTab(tab.id));
     } catch (error) {
       console.error('Failed to delete project:', error);
@@ -239,6 +264,7 @@ function App() {
               project={selectedProject}
               versions={versions}
               projectPath={projectPath}
+              mainProjectId={mainProjectId}
               isAnalyzing={isAnalyzing}
               isCheckingSize={isCheckingSize}
               result={result}
@@ -249,6 +275,7 @@ function App() {
               onVersionSelect={handleVersionSelectWithTab}
               onVersionCreated={handleVersionCreatedWithTab}
               onVersionDeleted={handleVersionDeletedWithTab}
+              onVersionUpdated={handleVersionUpdatedWithTab}
             />
           )}
         </div>

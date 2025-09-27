@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -6,105 +6,7 @@ import {
   XMarkIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
-
-const ChipInput = ({ value, onChange, placeholder, highlightText }) => {
-  const [inputValue, setInputValue] = useState('');
-  const inputRef = useRef(null);
-
-  const patterns = value ? value.split(',').filter(Boolean).map(p => p.trim()) : [];
-
-  const addPattern = (pattern) => {
-    const newPatterns = new Set([...patterns]);
-    pattern.split(',').forEach(p => {
-      if (p.trim()) newPatterns.add(p.trim());
-    });
-    const newValue = Array.from(newPatterns).join(',');
-    onChange(newValue);
-    setInputValue('');
-  };
-
-  const removePattern = (patternToRemove) => {
-    const newPatterns = patterns.filter(p => p !== patternToRemove);
-    const newValue = newPatterns.join(',');
-    onChange(newValue);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      if (inputValue.trim()) {
-        addPattern(inputValue);
-      }
-    } else if (e.key === 'Backspace' && !inputValue && patterns.length > 0) {
-      removePattern(patterns[patterns.length - 1]);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    if (!value.includes(',')) {
-      setInputValue(value);
-    } else {
-      addPattern(value);
-    }
-  };
-
-  // Function to highlight text in patterns
-  const highlightPattern = (pattern) => {
-    if (!highlightText || highlightText.trim() === '') {
-      return <span className="font-mono">{pattern}</span>;
-    }
-
-    const parts = pattern.split(new RegExp(`(${highlightText})`, 'gi'));
-
-    return (
-      <span className="font-mono">
-        {parts.map((part, i) =>
-          part.toLowerCase() === highlightText.toLowerCase()
-            ? <span key={i} className="bg-yellow-600 text-black">{part}</span>
-            : part
-        )}
-      </span>
-    );
-  };
-
-  return (
-    <div
-      className="min-h-[2.5rem] w-full px-3 py-2 bg-gray-700 rounded-md border border-gray-600 
-                 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent
-                 flex flex-wrap gap-2 cursor-text"
-      onClick={() => inputRef.current?.focus()}
-    >
-      {patterns.map((pattern, index) => (
-        <span
-          key={index}
-          className="inline-flex items-center bg-gray-600 text-gray-200 text-sm rounded-md px-2 py-1 gap-1"
-        >
-          {highlightPattern(pattern)}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              removePattern(pattern);
-            }}
-            className="text-gray-400 hover:text-gray-200 focus:outline-none"
-          >
-            <XMarkIcon className="h-3.5 w-3.5" />
-          </button>
-        </span>
-      ))}
-      <input
-        ref={inputRef}
-        type="text"
-        className="bg-transparent border-0 outline-none flex-grow text-sm min-w-[100px] text-gray-200 placeholder-gray-500"
-        placeholder={patterns.length === 0 ? placeholder : 'Add more patterns...'}
-        value={inputValue}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-      />
-    </div>
-  );
-};
+import { ChipInput } from '../ChipInput'; // Import the enhanced ChipInput
 
 const PatternInputs = ({ 
   excludePatterns, 
@@ -208,11 +110,15 @@ const PatternInputs = ({
               )}
             </div>
 
+            {/* Use the enhanced ChipInput with highlighting */}
             <ChipInput
               value={excludePatterns}
               onChange={onExcludeChange}
               placeholder="Type a pattern and press Enter (e.g., .git, node_modules)"
               highlightText={searchText}
+              enableMultiSelect={true}
+              enableInlineEdit={true}
+              enableUndo={true}
             />
 
             <div className="mt-3 border-t border-gray-700 pt-3">

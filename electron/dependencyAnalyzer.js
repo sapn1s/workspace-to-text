@@ -1,4 +1,4 @@
-// public/electron/dependencyAnalyzer.js
+// electron/dependencyAnalyzer.js
 const path = require('path');
 const fsSync = require('fs');
 const { isTextFile, normalizeRelativePath } = require('./fileUtils');

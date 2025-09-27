@@ -1,4 +1,4 @@
-// public/electron/ipc/handlers/patterns.js
+// electron/ipc/handlers/patterns.js
 
 const { ipcMain } = require('electron');
 const { PatternResolutionService } = require('../../services/PatternResolutionService');

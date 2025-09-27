@@ -1,7 +1,7 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const { registerIpcHandlers } = require('./public/electron/ipc');
-const { initDatabase } = require('./public/electron/database');
+const { registerIpcHandlers } = require('./electron/ipc');
+const { initDatabase } = require('./electron/database');
 
 let mainWindow;
 

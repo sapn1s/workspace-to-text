@@ -1,6 +1,6 @@
 {
   "name": "workspace-to-text",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "main": "./main.js",
   "homepage": "./",
@@ -56,7 +56,7 @@
       "build/**/*",
       "main.js",
       "preload.js",
-      "public/electron/**/*"
+      "electron/**/*"
     ],
     "directories": {
       "buildResources": "assets",

@@ -12,10 +12,16 @@ const ipcApi = {
     getProjectPatterns: (projectId) => ipcRenderer.invoke('project:getPatterns', projectId),
     updateProjectPatterns: (projectId, excludePatterns) =>
         ipcRenderer.invoke('project:updatePatterns', { projectId, excludePatterns }),
-    createProjectVersion: (projectId, versionName) =>
-        ipcRenderer.invoke('project:createVersion', { projectId, versionName }),
-    getProjectVersions: (projectId) => ipcRenderer.invoke('project:getVersions', projectId),
-
+    createProjectVersion: (projectId, versionName, copyFromMain = false) =>
+        ipcRenderer.invoke('project:createVersion', { projectId, versionName, copyFromMain }),
+    getProjectVersions: (mainProjectId) => ipcRenderer.invoke('project:getVersions', mainProjectId),
+    // Version management operations
+    renameVersion: (versionId, newName) =>
+        ipcRenderer.invoke('project:renameVersion', { versionId, newName }),
+    moveVersion: (versionId, newParentId) =>
+        ipcRenderer.invoke('project:moveVersion', { versionId, newParentId }),
+    getAvailableParents: (versionId) =>
+        ipcRenderer.invoke('project:getAvailableParents', { versionId }),
     // Analysis operations
     analyzeProject: (projectId, path) =>
         ipcRenderer.invoke('analysis:analyze', { projectId, path }),
@@ -55,12 +61,10 @@ const ipcApi = {
         list: (projectId) => ipcRenderer.invoke('modules:list', projectId),
 
         // Pattern management
-        addPattern: (data) => ipcRenderer.invoke('modules:addPattern', data),
         removePattern: (data) => ipcRenderer.invoke('modules:removePattern', data),
         getPatterns: (moduleId) => ipcRenderer.invoke('modules:getPatterns', moduleId),
 
         // Dependencies management
-        addDependency: (data) => ipcRenderer.invoke('modules:addDependency', data),
         removeDependency: (data) => ipcRenderer.invoke('modules:removeDependency', data),
         getDependencies: (moduleId) => ipcRenderer.invoke('modules:getDependencies', moduleId),
 

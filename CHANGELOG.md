@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2025-09-27
+
+### Added
+- **Project Versions**: Added proper parent/child relationship with tree structure selection display
+- **Pattern Input Field**: Multi-select functionality with edit and undo delete capabilities
+
+### Changed
+- **Context Optimizer**: Improved prompt system and layout design
+- **Context Optimizer**: Added missing files warning system
+
+### Fixed
+- Various minor fixes and optimizations
+- Multiple bug fixes
+
+### Known Issues
+- Potential new bugs may exist due to parent/child version implementation
+
 ## [2.2.0] - 2025-09-20
 
 ### Added

@@ -65,13 +65,11 @@ class ModuleHandlers {
         ipcMain.handle('modules:get', this.getModule.bind(this));
         ipcMain.handle('modules:list', this.listModules.bind(this));
 
-        // Pattern management
-        ipcMain.handle('modules:addPattern', this.addPattern.bind(this));
+        // Pattern management (keep for individual operations if needed)
         ipcMain.handle('modules:removePattern', this.removePattern.bind(this));
         ipcMain.handle('modules:getPatterns', this.getPatterns.bind(this));
 
-        // Dependencies management
-        ipcMain.handle('modules:addDependency', this.addDependency.bind(this));
+        // Dependencies management (keep for individual operations if needed)
         ipcMain.handle('modules:removeDependency', this.removeDependency.bind(this));
         ipcMain.handle('modules:getDependencies', this.getDependencies.bind(this));
 
@@ -80,15 +78,30 @@ class ModuleHandlers {
         ipcMain.handle('modules:getVersionModules', this.getVersionModules.bind(this));
     }
 
-    async createModule(_, { projectId, name, description = '' }) {
+    async createModule(_, data) {
         try {
+            const { mainProjectId, name, description = '', patterns = [], dependencies = [] } = data;
+
             return await new Promise((resolve, reject) => {
                 this.db.run(
                     'INSERT INTO modules (project_id, name, description) VALUES (?, ?, ?)',
-                    [projectId, name, description],
+                    [mainProjectId, name, description],
                     function (err) {
                         if (err) reject(err);
-                        resolve(this.lastID);
+
+                        const moduleId = this.lastID;
+
+                        // Insert patterns if any
+                        if (patterns.length > 0) {
+                            // Add pattern insertion logic here
+                        }
+
+                        // Insert dependencies if any  
+                        if (dependencies.length > 0) {
+                            // Add dependency insertion logic here
+                        }
+
+                        resolve(moduleId);
                     }
                 );
             });
@@ -98,14 +111,37 @@ class ModuleHandlers {
         }
     }
 
-    async updateModule(_, { moduleId, name, description }) {
+    async updateModule(_, moduleData) {
+        const { id: moduleId, name, description, patterns = [], dependencies = [] } = moduleData;
+
         try {
+            // Start a transaction to ensure all updates are atomic
+            await this.db.runAsync('BEGIN TRANSACTION');
+
+            // Update basic module info
             await this.db.runAsync(
                 'UPDATE modules SET name = ?, description = ? WHERE id = ?',
                 [name, description, moduleId]
             );
+
+            // Update patterns - replace all existing patterns
+            await this.db.runAsync('DELETE FROM module_patterns WHERE module_id = ?', [moduleId]);
+            for (const pattern of patterns) {
+                await this.addPattern(null, { moduleId, pattern });
+            }
+
+            // Update dependencies - replace all existing dependencies
+            await this.db.runAsync('DELETE FROM module_dependencies WHERE parent_module_id = ?', [moduleId]);
+            for (const dependency of dependencies) {
+                // Assuming dependencies array contains objects with id property
+                const childModuleId = dependency.id || dependency;
+                await this.addDependency(null, { parentModuleId: moduleId, childModuleId });
+            }
+
+            await this.db.runAsync('COMMIT');
             return true;
         } catch (error) {
+            await this.db.runAsync('ROLLBACK');
             console.error('Error updating module:', error);
             throw error;
         }
@@ -276,49 +312,80 @@ class ModuleHandlers {
         try {
             console.log(`Getting version modules for version ID: ${versionId}`);
 
-            // First determine the main project ID for this version
-            const project = await this.db.getAsync(
-                'SELECT id, parent_id FROM projects WHERE id = ?',
-                [versionId]
-            );
+            // Use recursive CTE to find the main project
+            const mainProjectResult = await this.db.getAsync(`
+            WITH RECURSIVE find_main_project AS (
+                -- Base case: start with the given project
+                SELECT id, parent_id, name
+                FROM projects 
+                WHERE id = ?
+                
+                UNION ALL
+                
+                -- Recursive case: traverse up the hierarchy
+                SELECT p.id, p.parent_id, p.name
+                FROM projects p
+                INNER JOIN find_main_project fmp ON p.id = fmp.parent_id
+            )
+            SELECT id as main_project_id, name 
+            FROM find_main_project 
+            WHERE parent_id IS NULL
+            LIMIT 1
+        `, [versionId]);
 
-            if (!project) {
-                console.warn(`Project with ID ${versionId} not found`);
+            if (!mainProjectResult) {
+                console.error(`Could not find main project for version ${versionId}`);
                 return [];
             }
 
-            // Get the main project ID (either the current ID if it's a main project, or its parent ID if it's a version)
-            const mainProjectId = project.parent_id || project.id;
-            console.log(`Main project ID for version ${versionId}: ${mainProjectId}`);
+            const mainProjectId = mainProjectResult.main_project_id;
+            console.log(`Found main project: ${mainProjectResult.name} (ID: ${mainProjectId})`);
 
-            // Get all modules for this project
+            // Get all modules for the main project
             const modules = await this.db.allAsync(`
-                SELECT * FROM modules WHERE project_id = ?
-            `, [mainProjectId]);
+            SELECT * FROM modules WHERE project_id = ?
+        `, [mainProjectId]);
+
+            console.log(`Found ${modules.length} modules for main project ${mainProjectId}`);
+
+            if (modules.length === 0) {
+                return [];
+            }
+
+            // Check if this version has any module states initialized
+            const existingStates = await this.db.allAsync(`
+            SELECT module_id FROM version_modules WHERE version_id = ?
+        `, [versionId]);
+
+            // Initialize module states if they don't exist
+            if (existingStates.length === 0) {
+                console.log(`Initializing ${modules.length} module states for version ${versionId}`);
+
+                for (const module of modules) {
+                    await this.db.runAsync(`
+                    INSERT INTO version_modules (version_id, module_id, is_included)
+                    VALUES (?, ?, ?)
+                `, [versionId, module.id, 0]);
+                }
+            }
 
             // Get the version-specific inclusion states
             const versionModuleStates = await this.db.allAsync(`
-                SELECT module_id, is_included
-                FROM version_modules
-                WHERE version_id = ?
-            `, [versionId]);
+            SELECT module_id, is_included
+            FROM version_modules
+            WHERE version_id = ?
+        `, [versionId]);
 
-            // Create a map of module inclusion states
+            // Create inclusion map
             const inclusionMap = new Map();
             versionModuleStates.forEach(vm => {
                 inclusionMap.set(vm.module_id, vm.is_included);
             });
 
-            // Combine module data with inclusion state
+            // Build final result
             const result = await Promise.all(modules.map(async module => {
-                // Check if this module has a specific inclusion state for this version
-                const hasState = inclusionMap.has(module.id);
-                const isIncluded = hasState ? inclusionMap.get(module.id) : 0; // Default to not included (0) if no state
-
-                // Get patterns
+                const isIncluded = inclusionMap.get(module.id) || 0;
                 const patterns = await this.getPatterns(null, module.id);
-
-                // Get dependencies
                 const dependencies = await this.getDependencies(null, module.id);
 
                 return {

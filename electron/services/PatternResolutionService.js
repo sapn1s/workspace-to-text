@@ -47,20 +47,36 @@ class PatternResolutionService {
     }
 
     async getEnabledModules(projectId) {
-        // First determine the main project ID for this version
-        const project = await this.db.getAsync(
-            'SELECT id, parent_id FROM projects WHERE id = ?',
-            [projectId]
-        );
+        try {
+            // Use recursive CTE to find the TRUE main project
+            const mainProjectResult = await this.db.getAsync(`
+            WITH RECURSIVE find_main_project AS (
+                -- Base case: start with the given project
+                SELECT id, parent_id, name FROM projects WHERE id = ?
+                
+                UNION ALL
+                
+                -- Recursive case: traverse up the hierarchy
+                SELECT p.id, p.parent_id, p.name
+                FROM projects p
+                INNER JOIN find_main_project fmp ON p.id = fmp.parent_id
+            )
+            SELECT id as main_project_id, name 
+            FROM find_main_project 
+            WHERE parent_id IS NULL
+            LIMIT 1
+        `, [projectId]);
 
-        if (!project) {
-            return [];
-        }
+            if (!mainProjectResult) {
+                console.warn(`Could not find main project for project ${projectId}`);
+                return [];
+            }
 
-        // Get the main project ID (either the current ID if it's a main project, or its parent ID if it's a version)
-        const mainProjectId = project.parent_id || project.id;
+            const mainProjectId = mainProjectResult.main_project_id;
+            console.log(`PatternService: Found main project ${mainProjectResult.name} (ID: ${mainProjectId}) for project ${projectId}`);
 
-        return await this.db.allAsync(`
+            // Get enabled modules using the TRUE main project ID
+            const enabledModules = await this.db.allAsync(`
             SELECT m.id, m.name, m.description,
                    COALESCE(vm.is_included, 0) as is_included
             FROM modules m
@@ -68,7 +84,16 @@ class PatternResolutionService {
             WHERE m.project_id = ?
             AND COALESCE(vm.is_included, 0) = 1
         `, [projectId, mainProjectId]);
+
+            console.log(`PatternService: Found ${enabledModules.length} enabled modules for version ${projectId}`);
+            return enabledModules;
+
+        } catch (error) {
+            console.error('Error getting enabled modules:', error);
+            return [];
+        }
     }
+
 
     async resolveModulePatterns(enabledModules) {
         const allPatterns = {
@@ -79,7 +104,7 @@ class PatternResolutionService {
         for (const module of enabledModules) {
             // Get module's direct patterns
             const patterns = await this.getModulePatterns(module.id);
-            
+
             // Add to sets and track module info
             patterns.forEach(pattern => {
                 // Module patterns are exclusion patterns
@@ -135,7 +160,7 @@ class PatternResolutionService {
 
     combineAllPatterns(project, modulePatterns) {
         const globalExclude = this.parsePatterns(project?.exclude_patterns);
-        
+
         // Start with global exclude patterns and add module patterns
         const combinedExclude = [...new Set([
             ...globalExclude,
@@ -172,7 +197,7 @@ class PatternResolutionService {
     isPathExcluded(filePath, resolvedPatterns) {
         const ignore = require('ignore');
         const ig = ignore();
-        
+
         // Add user-defined exclude patterns
         if (resolvedPatterns.excludeArray && resolvedPatterns.excludeArray.length > 0) {
             ig.add(resolvedPatterns.excludeArray);
@@ -204,7 +229,7 @@ class PatternResolutionService {
             },
             moduleInfo: Object.fromEntries(resolvedPatterns.moduleInfo)
         };
-        
+
         return summary;
     }
 }

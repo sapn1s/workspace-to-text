@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { ModuleList } from './ModuleList';
-import { ModuleDialog } from './ModuleDialog';
-import { ModuleDeleteDialog } from './ModuleDeleteDialog';
+import { ModuleList } from './components/ModuleList';
+import { ModuleDialog } from './components/ModuleDialog';
+import { ModuleDeleteDialog } from './components/ModuleDeleteDialog';
 
 export function ModulesPanel({
     project,
@@ -21,11 +21,23 @@ export function ModulesPanel({
     const [moduleVersions, setModuleVersions] = useState(new Map());
     const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for forcing updates
 
+    useEffect(() => {
+        console.log('=== MODULE DEBUG ===');
+        console.log('Current project:', project);
+        console.log('Modules with inclusion states:', modules);
+        console.log('Module inclusion states:', modules.map(m => ({
+            id: m.id,
+            name: m.name,
+            is_included: m.is_included,
+            version_id: project.id
+        })));
+    }, [modules, project.id]);
+
     // Load version-specific module settings
     useEffect(() => {
         const loadVersionModules = async () => {
             if (!project?.id || !mainProjectId) return;
-            
+
             try {
                 const versionModules = await window.electron.modules.getVersionModules(project.id);
                 const versionMap = new Map();
@@ -56,9 +68,9 @@ export function ModulesPanel({
         try {
             const currentState = moduleVersions.get(moduleId) ?? true;
             const newState = !currentState;
-            
+
             console.log(`Toggling module ${moduleId} from ${currentState} to ${newState} for version ${project.id}`);
-            
+
             await window.electron.modules.setVersionInclusion({
                 versionId: project.id,
                 moduleId,
@@ -84,10 +96,10 @@ export function ModulesPanel({
         try {
             await onModuleCreate(moduleData);
             setShowCreateDialog(false);
-            
+
             // Force refresh after creation
             setRefreshKey(prev => prev + 1);
-            
+
             // Notify parent about module changes
             if (onModuleChange) {
                 await onModuleChange();
@@ -100,14 +112,14 @@ export function ModulesPanel({
     const handleUpdateModule = async (moduleData) => {
         try {
             await onModuleUpdate(moduleData);
-            
+
             // Get fresh module data for the dialog
             const updatedModule = await window.electron.modules.get(moduleData.id);
             setEditingModule(updatedModule);
-            
+
             // Force refresh after update
             setRefreshKey(prev => prev + 1);
-            
+
             // Notify parent about module changes
             if (onModuleChange) {
                 await onModuleChange();
@@ -140,10 +152,10 @@ export function ModulesPanel({
             try {
                 await onModuleDelete(moduleToDelete.id);
                 setModuleToDelete(null);
-                
+
                 // Force refresh after deletion
                 setRefreshKey(prev => prev + 1);
-                
+
                 // Notify parent about module changes
                 if (onModuleChange) {
                     await onModuleChange();

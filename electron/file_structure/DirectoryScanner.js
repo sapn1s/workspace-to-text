@@ -1,4 +1,4 @@
-// public/electron/file_structure/DirectoryScanner.js - FIXED VERSION
+// electron/file_structure/DirectoryScanner.js - FIXED VERSION
 
 const path = require('path');
 const { ExclusionManager } = require('./ExclusionManager');

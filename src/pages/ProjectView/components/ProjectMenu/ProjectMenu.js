@@ -1,25 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { EllipsisVerticalIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import { CreateVersionForm } from './components/CreateVersionForm';
+import { RenameVersionForm } from './components/RenameVersionForm';
+import { MoveVersionForm } from './components/MoveVersionForm';
+import { DeleteVersionButton } from './components/DeleteVersionButton';
 
-const ProjectMenu = ({ project, versions, onVersionCreated, onVersionDeleted, onBack }) => {
+const ProjectMenu = ({ project, versions, onVersionCreated, onVersionDeleted, onBack, onVersionUpdated }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isCreatingVersion, setIsCreatingVersion] = useState(false);
-  const [newVersionName, setNewVersionName] = useState('');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeForm, setActiveForm] = useState(null);
   const menuRef = useRef();
-  const inputRef = useRef();
-
-  useEffect(() => {
-    if (isCreatingVersion && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isCreatingVersion]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsOpen(false);
-        setShowDeleteConfirm(false);
+        setActiveForm(null);
       }
     };
 
@@ -27,160 +22,122 @@ const ProjectMenu = ({ project, versions, onVersionCreated, onVersionDeleted, on
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleCreateVersion = async () => {
-    if (!newVersionName.trim()) return;
-    
-    try {
-      // Always create a version from the currently selected project/version
-      // This ensures we copy the settings from the current selection
-      const sourceId = project.id;
-      
-      // Create version based on the current project configuration
-      const newVersionId = await window.electron.createProjectVersion(sourceId, newVersionName);
-      
-      setNewVersionName('');
-      setIsCreatingVersion(false);
-      setIsOpen(false);
-      
-      // Determine the main project ID for version listing 
-      const mainProjectId = project.parent_id || project.id;
-      
-      if (onVersionCreated) {
-        await onVersionCreated(mainProjectId, newVersionId);
-      }
-    } catch (error) {
-      console.error('Failed to create version:', error);
-      alert('Failed to create version: ' + error.message);
+  const handleOpenMenu = () => {
+    setIsOpen(!isOpen);
+    setActiveForm(null);
+  };
+
+  const handleCloseMenu = () => {
+    setIsOpen(false);
+    setActiveForm(null);
+  };
+
+  const handleVersionCreated = async (mainProjectId, newVersionId) => {
+    handleCloseMenu();
+    if (onVersionCreated) {
+      await onVersionCreated(mainProjectId, newVersionId);
     }
   };
 
-  const handleDeleteVersion = async () => {
-    if (!project.parent_id) {    
-      const confirmed = window.confirm(
-        `Are you sure you want to delete the entire project "${project.name}"? This action cannot be undone.`
-      );
-      
-      if (confirmed) {
-        try {
-          await window.electron.deleteProject(project.id);
-          setIsOpen(false);
-          onBack(); // Navigate back to project list
-        } catch (error) {
-          console.error('Failed to delete project:', error);
-          alert('Failed to delete project: ' + error.message);
-        }
-      }
-    } else {
-      // This is a version
-      const confirmed = window.confirm(
-        `Are you sure you want to delete version "${project.version_name}"? This action cannot be undone.`
-      );
-      
-      if (confirmed) {
-        try {
-          await window.electron.deleteVersion(project.id);
-          setIsOpen(false);
-          
-          if (onVersionDeleted) {
-            const mainProjectId = project.parent_id;
-            await onVersionDeleted(mainProjectId);
-          }
-        } catch (error) {
-          console.error('Failed to delete version:', error);
-          alert('Failed to delete version: ' + error.message);
-        }
-      }
+  const handleVersionUpdated = async () => {
+    handleCloseMenu();
+    if (onVersionUpdated) {
+      await onVersionUpdated();
     }
   };
+
+  const handleVersionDeleted = async (mainProjectId) => {
+    handleCloseMenu();
+    if (onVersionDeleted) {
+      await onVersionDeleted(mainProjectId);
+    }
+  };
+
+  const handleProjectDeleted = () => {
+    handleCloseMenu();
+    onBack();
+  };
+
+  if (!project) return null;
 
   const isMainProject = !project.parent_id;
   const hasVersions = versions && versions.length > 0;
-  const canDeleteMainProject = isMainProject && !hasVersions;
-  
-  if (!project) return null;
 
   return (
     <div className="relative" ref={menuRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleOpenMenu}
         className="p-2 hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <EllipsisVerticalIcon className="h-5 w-5 text-gray-400" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 z-[9999] max-h-96 overflow-y-auto">
           <div className="py-1">
-            {/* Create Version Option */}
-            {isCreatingVersion ? (
-              <div className="px-4 py-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={newVersionName}
-                  onChange={(e) => setNewVersionName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleCreateVersion()}
-                  placeholder="Enter version name"
-                  className="w-full px-2 py-1 bg-gray-700 rounded-md text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <div className="flex justify-end mt-2 space-x-2">
-                  <button
-                    onClick={() => {
-                      setIsCreatingVersion(false);
-                      setNewVersionName('');
-                    }}
-                    className="px-2 py-1 text-sm text-gray-400 hover:text-gray-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCreateVersion}
-                    className="px-2 py-1 text-sm text-blue-400 hover:text-blue-300"
-                    disabled={!newVersionName.trim()}
-                  >
-                    Create
-                  </button>
-                </div>
-              </div>
+            
+            {/* Create Version */}
+            {activeForm === 'create' ? (
+              <CreateVersionForm
+                project={project}
+                onVersionCreated={handleVersionCreated}
+                onCancel={() => setActiveForm(null)}
+              />
             ) : (
               <button
-                onClick={() => setIsCreatingVersion(true)}
+                onClick={() => setActiveForm('create')}
                 className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
               >
                 Create New Version
               </button>
             )}
 
+            {/* Rename Version - Only for versions, not main projects */}
+            {!isMainProject && (
+              activeForm === 'rename' ? (
+                <RenameVersionForm
+                  project={project}
+                  onVersionUpdated={handleVersionUpdated}
+                  onCancel={() => setActiveForm(null)}
+                />
+              ) : (
+                <button
+                  onClick={() => setActiveForm('rename')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                >
+                  Rename Version
+                </button>
+              )
+            )}
+
+            {/* Move Version - Only for versions, not main projects */}
+            {!isMainProject && (
+              activeForm === 'move' ? (
+                <MoveVersionForm
+                  project={project}
+                  onVersionUpdated={handleVersionUpdated}
+                  onCancel={() => setActiveForm(null)}
+                />
+              ) : (
+                <button
+                  onClick={() => setActiveForm('move')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                >
+                  Move Version
+                </button>
+              )
+            )}
+
             {/* Separator */}
             <div className="border-t border-gray-700 my-1"></div>
 
-            {/* Delete Option */}
-            <button
-              onClick={handleDeleteVersion}
-              className={`w-full text-left px-4 py-2 text-sm flex items-center ${
-                isMainProject && hasVersions
-                  ? 'text-gray-500 cursor-not-allowed'
-                  : 'text-red-400 hover:bg-gray-700 hover:text-red-300'
-              }`}
-              disabled={isMainProject && hasVersions}
-              title={
-                isMainProject && hasVersions
-                  ? 'Main project can only be deleted from the project list page'
-                  : isMainProject
-                  ? 'Delete entire project'
-                  : 'Delete this version'
-              }
-            >
-              <TrashIcon className="h-4 w-4 mr-2" />
-              {isMainProject ? 'Delete Project' : 'Delete Version'}
-            </button>
-
-            {/* Info text for disabled delete */}
-            {isMainProject && hasVersions && (
-              <div className="px-4 py-2 text-xs text-gray-500">
-                Main project can only be deleted from the project list page
-              </div>
-            )}
+            {/* Delete */}
+            <DeleteVersionButton
+              project={project}
+              hasVersions={hasVersions}
+              onVersionDeleted={handleVersionDeleted}
+              onProjectDeleted={handleProjectDeleted}
+            />
           </div>
         </div>
       )}

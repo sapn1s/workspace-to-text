@@ -7,10 +7,10 @@ export function useProjects() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [versions, setVersions] = useState([]);
   const [projectPath, setProjectPath] = useState('');
+  const [mainProjectId, setMainProjectId] = useState(null);
   const isVersionSwitching = useRef(false);
 
   const loadProjects = async () => {
-    console.log("Loading projects");
     const loadedProjects = await window.electron.getProjects();
     setProjects(loadedProjects);
     return loadedProjects.reduce((acc, project) => {
@@ -19,39 +19,17 @@ export function useProjects() {
     }, new Set());
   };
 
-  const loadVersions = async (projectId) => {
-    if (!projectId) return [];
+  const loadVersions = async (mainProjectId) => {
+    if (!mainProjectId) return [];
     try {
-      console.log("Loading versions for project ID:", projectId);
+      console.log("Loading versions for main project ID:", mainProjectId);
 
-      // First, determine if this is a version or main project
-      const allProjects = await window.electron.getProjects();
-      const project = allProjects.find(p => p.id === projectId);
+      // Pass the main project ID directly - no calculation needed
+      const allVersions = await window.electron.getProjectVersions(mainProjectId);
+      console.log(`Found ${allVersions.length} total items for main project ${mainProjectId}`);
 
-      if (!project) {
-        console.warn("Project not found:", projectId);
-        return [];
-      }
-
-      // Get the main project ID (either the current ID or its parent)
-      const mainProjectId = project.parent_id || project.id;
-      console.log("Main project ID:", mainProjectId);
-
-      // Get the main project
-      const mainProject = allProjects.find(p => p.id === mainProjectId);
-
-      // Get all versions of this project
-      const projectVersions = await window.electron.getProjectVersions(mainProjectId);
-      console.log(`Found ${projectVersions.length} versions for project ${mainProjectId}`);
-
-      if (mainProject) {
-        const allVersions = [mainProject, ...projectVersions];
-        setVersions(allVersions);
-        return allVersions;
-      } else {
-        setVersions(projectVersions);
-        return projectVersions;
-      }
+      setVersions(allVersions);
+      return allVersions;
     } catch (error) {
       console.error('Error loading versions:', error);
       setVersions([]);
@@ -65,12 +43,14 @@ export function useProjects() {
       const allProjects = await window.electron.getProjects();
       const freshProject = allProjects.find(p => p.id === project.id);
       if (freshProject) {
-        // Set the project directly without clearing first
         setSelectedProject(freshProject);
         setProjectPath(freshProject.path || '');
 
-        // Load versions based on parent_id if this is a version, or on the project's id if it's a main project
-        await loadVersions(freshProject.parent_id || freshProject.id);
+        // Calculate and store main project ID
+        const calculatedMainProjectId = freshProject.parent_id || freshProject.id;
+        setMainProjectId(calculatedMainProjectId);
+
+        await loadVersions(calculatedMainProjectId);
         return freshProject;
       }
     } catch (error) {
@@ -81,30 +61,54 @@ export function useProjects() {
   const handleVersionSelect = async (version) => {
     if (!version) return;
     try {
-      // Set flag to indicate we're switching versions
       isVersionSwitching.current = true;
-      
+
       const allProjects = await window.electron.getProjects();
       const freshVersion = allProjects.find(p => p.id === version.id);
 
       if (freshVersion) {
-        // Update project path first 
         setProjectPath(freshVersion.path || '');
-        // Then update the selected project
         setSelectedProject(freshVersion);
-        
-        console.log('Version switched to:', freshVersion.id, 'with path:', freshVersion.path);
 
-        // Load all versions of this project family
-        const parentId = freshVersion.parent_id || freshVersion.id;
-        await loadVersions(parentId);
+        // Calculate and store main project ID
+        const calculatedMainProjectId = freshVersion.parent_id || freshVersion.id;
+        setMainProjectId(calculatedMainProjectId);
+
+        await loadVersions(calculatedMainProjectId);
       }
-      
-      // Reset switching flag when done
+
       isVersionSwitching.current = false;
     } catch (error) {
       console.error('Error selecting version:', error);
       isVersionSwitching.current = false;
+    }
+  };
+
+  const handleVersionUpdated = async () => {
+    try {
+      // Reload all projects to get updated data
+      await loadProjects();
+
+      // If we have a selected project, refresh its data
+      if (selectedProject) {
+        const allProjects = await window.electron.getProjects();
+        const updatedProject = allProjects.find(p => p.id === selectedProject.id);
+
+        if (updatedProject) {
+          setSelectedProject(updatedProject);
+          setProjectPath(updatedProject.path || '');
+        }
+
+        // Reload versions for the project family
+        const mainProjectId = selectedProject.parent_id || selectedProject.id;
+        await loadVersions(mainProjectId);
+      }
+
+      console.log('Version updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error handling version update:', error);
+      throw error;
     }
   };
 
@@ -127,21 +131,21 @@ export function useProjects() {
     try {
       // Reload projects to get updated data
       await loadProjects();
-      
+
       // Reload versions for the main project
       await loadVersions(mainProjectId);
-      
+
       // If the deleted version was the currently selected one, switch to main project
       if (selectedProject && selectedProject.parent_id === mainProjectId) {
         const allProjects = await window.electron.getProjects();
         const mainProject = allProjects.find(p => p.id === mainProjectId);
-        
+
         if (mainProject) {
           setSelectedProject(mainProject);
           setProjectPath(mainProject.path || '');
         }
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error handling version deletion:', error);
@@ -167,7 +171,7 @@ export function useProjects() {
     try {
       // Set flag to indicate we're switching versions
       isVersionSwitching.current = true;
-      
+
       // Reload all projects to get the latest data
       await loadProjects();
 
@@ -192,7 +196,7 @@ export function useProjects() {
         // Reload the versions list as a fallback
         await loadVersions(mainProjectId);
       }
-      
+
       // Reset switching flag when done
       isVersionSwitching.current = false;
     } catch (error) {
@@ -210,6 +214,7 @@ export function useProjects() {
     selectedProject,
     versions,
     projectPath,
+    mainProjectId,
     isVersionSwitching: isVersionSwitching.current,
     setProjectPath,
     setSelectedProject,
@@ -217,9 +222,10 @@ export function useProjects() {
     loadVersions,
     handleSelectProject,
     handleDeleteProject,
-    handleDeleteVersion, // NEW: Export the version deletion handler
+    handleDeleteVersion,
     handleRenameProject,
     handleVersionSelect,
-    handleVersionCreated
+    handleVersionCreated,
+    handleVersionUpdated
   };
 }

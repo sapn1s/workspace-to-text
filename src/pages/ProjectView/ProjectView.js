@@ -1,30 +1,19 @@
-// src/pages/ProjectView/ProjectView.js - Restructured layout with constrained heights
-
 import { useState, useEffect, useCallback } from 'react';
-import {
-    ArrowLeftIcon,
-    ClipboardIcon,
-    ShareIcon,
-    FolderIcon,
-    MagnifyingGlassIcon,
-    ArrowPathIcon
-} from '@heroicons/react/24/outline';
-import ProjectMenu from './components/ProjectMenu/ProjectMenu';
 import ProjectVersionSelector from './components/ProjectVersionSelector/ProjectVersionSelector';
-import ProjectSettings from './components/ProjectSettings/ProjectSettings';
-import PatternInputs from './components/PatternInputs/PatternInputs';
-import AnalysisResultContainer from './components/AnalysisResultContainer/AnalysisResultContainer';
-import FileSizeAnalyzer from './components/FileSizeAnalyzer/FileSizeAnalyzer';
-import { ModulesPanel } from './components/ModulesPanel/components/ModulesPanel';
+import { ModulesPanel } from './components/ModulesPanel/ModulesPanel';
 import { useModules } from '../../hooks/useModules';
 import { usePatterns } from '../../hooks/usePatterns';
 import FileExplorer from './components/FileExplorer/FileExplorer';
-import LLMPrompts from './components/LLMPrompts/LLMPrompts';
+import { ProjectHeader } from './components/ProjectHeader/ProjectHeader';
+import { ProjectConfiguration } from './components/ProjectConfiguration/ProjectConfiguration';
+import { OutputSection } from './components/OutputSection/OutputSection';
+import { PromptBuilder } from './components/PromptBuilder/PromptBuilder';
 
 export default function ProjectView({
     project,
     versions,
     projectPath,
+    mainProjectId,
     isAnalyzing,
     isCheckingSize,
     result,
@@ -45,15 +34,13 @@ export default function ProjectView({
     const [contextFileSizeData, setContextFileSizeData] = useState([]);
     const [contextAnalysisType, setContextAnalysisType] = useState(null);
     const [contextAnalysisTitle, setContextAnalysisTitle] = useState('');
-
     const {
         modules,
-        mainProjectId,
         createModule,
         updateModule,
         deleteModule,
         refreshModules
-    } = useModules(project.id);
+    } = useModules(project.id, mainProjectId);
 
     const {
         excludePatterns,
@@ -105,6 +92,29 @@ export default function ProjectView({
             alert('Failed to apply context exclusions: ' + error.message);
         }
     }, [project.id, projectPath, excludePatterns, handleContextAnalysisResult]);
+
+    const handleVersionUpdated = async () => {
+        try {
+            // Reload projects and versions after a version is updated
+            await loadProjects();
+
+            // Determine the main project ID to reload versions
+            const mainProjectId = project.parent_id || project.id;
+            await loadVersions(mainProjectId);
+
+            // Refresh the current project data
+            const allProjects = await window.electron.getProjects();
+            const updatedProject = allProjects.find(p => p.id === project.id);
+
+            if (updatedProject) {
+                setSelectedProject(updatedProject);
+            }
+
+            console.log('Version updated successfully');
+        } catch (error) {
+            console.error('Error handling version update:', error);
+        }
+    };
 
     const handleAnalyzeClick = () => {
         if (!projectPath) {
@@ -243,6 +253,11 @@ export default function ProjectView({
         }
     };
 
+    const handleCopyToClipboard = () => {
+        const currentData = getCurrentDisplayData();
+        window.electron.copyToClipboard(currentData.result);
+    };
+
     // Helper function to get current display data based on active tab
     const getCurrentDisplayData = () => {
         if (activeTab === 'context') {
@@ -266,33 +281,15 @@ export default function ProjectView({
     return (
         <div className="flex flex-col w-full mx-auto">
             {/* Header Section */}
-            <div className="flex items-center justify-between sticky top-0 bg-gray-900 py-2 z-10">
-                <div className="flex items-center">
-                    <button
-                        onClick={onBack}
-                        className="mr-4 p-2 bg-gray-800 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        title="Back to projects"
-                    >
-                        <ArrowLeftIcon className="h-5 w-5 text-blue-500" />
-                    </button>
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-100">{project.name}</h2>
-                        {project.version_name && (
-                            <span className="text-sm text-gray-400">Version: {project.version_name}</span>
-                        )}
-                    </div>
-                    {patternsLoading && (
-                        <span className="ml-2 text-sm text-blue-400">Loading patterns...</span>
-                    )}
-                </div>
-                <ProjectMenu
-                    project={project}
-                    versions={versions}
-                    onVersionCreated={onVersionCreated}
-                    onVersionDeleted={onVersionDeleted}
-                    onBack={onBack}
-                />
-            </div>
+            <ProjectHeader
+                project={project}
+                versions={versions}
+                patternsLoading={patternsLoading}
+                onBack={onBack}
+                onVersionCreated={onVersionCreated}
+                onVersionDeleted={onVersionDeleted}
+                onVersionUpdated={handleVersionUpdated}
+            />
 
             {/* Version Selector */}
             <ProjectVersionSelector
@@ -301,213 +298,87 @@ export default function ProjectView({
                 onVersionSelect={onVersionSelect}
             />
 
-            {/* Main Content Area - Two Row Layout */}
-            <div className="flex flex-col gap-4 min-h-[calc(100vh-12rem)] mt-4">
+            {/* Main Content Area - Keep original layout structure but fix height issue */}
+            <div className="flex flex-col gap-4 mt-4">
 
                 {/* Row 1: File Explorer + Project Configuration + Modules Panel */}
                 <div className="flex gap-4">
-                    {/* File Explorer */}
-                    <div className="w-1/5 flex-none">
-                        <FileExplorer
-                            path={projectPath}
-                            project={project}
-                            onPatternChange={handlePatternChange}
-                            modules={modules}
-                            onModuleChange={handleModuleChange}
-                            onContextAnalysisResult={handleContextAnalysisResult}
-                        />
-                    </div>
-
-                    {/* Project Configuration */}
-                    <div className="w-1/2 flex-none">
-                        <div className="bg-gray-800 rounded-lg p-4 space-y-1 h-full">
-                            <div className="flex items-center space-x-2">
-                                <input
-                                    type="text"
-                                    value={projectPath}
-                                    readOnly
-                                    className="flex-grow px-3 py-2 bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                    placeholder="Select project folder"
-                                />
-                                <button
-                                    onClick={onFolderSelect}
-                                    className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    disabled={isAnalyzing || isCheckingSize}
-                                >
-                                    <FolderIcon className="h-5 w-5 text-blue-500" />
-                                </button>
-                            </div>
-
-                            <ProjectSettings projectId={project.id} />
-
-                            <PatternInputs
-                                excludePatterns={excludePatterns}
-                                onExcludeChange={handlePatternChange}
-                                resolvedPatterns={resolvedPatterns}
+                    {/* File Explorer - Positioned absolutely so it doesn't affect flex layout */}
+                    <div className="w-1/5 flex-none relative">
+                        <div className="absolute top-0 left-0 w-full z-10">
+                            <FileExplorer
+                                path={projectPath}
+                                project={project}
+                                onPatternChange={handlePatternChange}
+                                modules={modules}
+                                onModuleChange={handleModuleChange}
+                                onContextAnalysisResult={handleContextAnalysisResult}
                             />
-
-                            <button
-                                onClick={handleAnalyzeClick}
-                                className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={isAnalyzing || isCheckingSize || !projectPath}
-                            >
-                                {isCheckingSize ? (
-                                    <>
-                                        <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
-                                        Checking folder size...
-                                    </>
-                                ) : isAnalyzing ? (
-                                    <>
-                                        <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
-                                        Analyzing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
-                                        Analyze
-                                    </>
-                                )}
-                            </button>
                         </div>
                     </div>
 
-                    {/* Modules Panel - Uses only needed height, with max constraint */}
-                    <div className={`flex-none ${isModulesPanelCollapsed ? 'w-1/12' : 'w-1/5'}`}>
-                        <div className="bg-gray-800 rounded-lg max-h-full overflow-hidden">
-                            <div className="overflow-y-auto">
-                                <ModulesPanel
-                                    project={project}
-                                    modules={modules}
-                                    mainProjectId={mainProjectId}
-                                    isCollapsed={isModulesPanelCollapsed}
-                                    onToggleCollapse={() => setIsModulesPanelCollapsed(!isModulesPanelCollapsed)}
-                                    onModuleCreate={handleModuleCreate}
-                                    onModuleUpdate={handleModuleUpdate}
-                                    onModuleDelete={handleModuleDelete}
-                                    onModuleChange={handleModuleChange}
-                                />
-                            </div>
+                    {/* Project Configuration - Fixed size */}
+                    <div className="w-1/2 flex-none">
+                        <ProjectConfiguration
+                            project={project}
+                            projectPath={projectPath}
+                            isAnalyzing={isAnalyzing}
+                            isCheckingSize={isCheckingSize}
+                            excludePatterns={excludePatterns}
+                            resolvedPatterns={resolvedPatterns}
+                            onFolderSelect={onFolderSelect}
+                            onAnalyzeClick={handleAnalyzeClick}
+                            onPatternChange={handlePatternChange}
+                        />
+                    </div>
+
+                    {/* Modules Panel - Positioned absolutely so it doesn't affect flex layout */}
+                    <div className={`flex-none relative ${isModulesPanelCollapsed ? 'w-1/12' : 'w-1/5'}`}>
+                        <div className="absolute top-0 right-0 w-full z-5">
+                            <ModulesPanel
+                                project={project}
+                                modules={modules}
+                                mainProjectId={mainProjectId}
+                                isCollapsed={isModulesPanelCollapsed}
+                                onToggleCollapse={() => setIsModulesPanelCollapsed(!isModulesPanelCollapsed)}
+                                onModuleCreate={handleModuleCreate}
+                                onModuleUpdate={handleModuleUpdate}
+                                onModuleDelete={handleModuleDelete}
+                                onModuleChange={handleModuleChange}
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Row 2: Empty space + Output + Prompt Builder - Fixed heights like original */}
+                {/* Row 2: Empty space + Output + Prompt Builder - Fixed heights */}
                 <div className="flex gap-4">
                     {/* Empty space to align with file explorer column */}
                     <div className="w-1/5 flex-none">
                         {/* Empty - maintains column alignment */}
                     </div>
 
-                    {/* Output Section - Fixed height like original */}
+                    {/* Output Section - Fixed height */}
                     <div className="w-1/2 flex-none">
-                        <div className="bg-gray-800 rounded-lg flex flex-col">
-                            {/* Tabs Navigation */}
-                            <div className="flex items-center border-b border-gray-700">
-                                <button
-                                    className={`px-4 py-2 text-sm font-medium ${activeTab === 'output'
-                                        ? 'text-blue-400 border-b-2 border-blue-400'
-                                        : 'text-gray-400 hover:text-gray-200'
-                                        }`}
-                                    onClick={() => setActiveTab('output')}
-                                >
-                                    Output
-                                </button>
-                                <button
-                                    className={`px-4 py-2 text-sm font-medium ${activeTab === 'analysis'
-                                        ? 'text-blue-400 border-b-2 border-blue-400'
-                                        : 'text-gray-400 hover:text-gray-200'
-                                        }`}
-                                    onClick={() => setActiveTab('analysis')}
-                                    disabled={!currentData.result || currentData.fileSizeData?.length === 0}
-                                >
-                                    Size Analysis
-                                </button>
-
-                                {/* Context tab - only show if we have context analysis results */}
-                                {contextAnalysisResult && (
-                                    <button
-                                        className={`px-4 py-2 text-sm font-medium ${activeTab === 'context'
-                                            ? 'text-green-400 border-b-2 border-green-400'
-                                            : 'text-gray-400 hover:text-gray-200'
-                                            }`}
-                                        onClick={() => setActiveTab('context')}
-                                        title={contextAnalysisTitle}
-                                    >
-                                        Context
-                                        {contextAnalysisTitle && (
-                                            <span className="ml-1 text-xs text-gray-500">
-                                                ({contextAnalysisTitle.split(':')[0]})
-                                            </span>
-                                        )}
-                                    </button>
-                                )}
-
-                                {/* Copy and Dependencies Buttons */}
-                                <div className="ml-auto p-2 flex items-center space-x-2">
-                                    <button
-                                        onClick={handleOpenDependencyGraph}
-                                        className="flex items-center px-3 py-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                        disabled={!projectPath || isDependencyAnalyzing}
-                                        title="Open dependency graph in new window"
-                                    >
-                                        {isDependencyAnalyzing ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500 mr-2"></div>
-                                                Analyzing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ShareIcon className="h-4 w-4 mr-2 text-purple-500" />
-                                                Dependencies
-                                            </>
-                                        )}
-                                    </button>
-
-                                    <button
-                                        onClick={() => window.electron.copyToClipboard(currentData.result)}
-                                        className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        disabled={!currentData.result}
-                                        title="Copy to clipboard"
-                                    >
-                                        <ClipboardIcon className="h-5 w-5 text-blue-500" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Tab Content - Fixed height like original */}
-                            <div className="overflow-hidden p-4">
-                                {/* Show context analysis title if we're on context tab */}
-                                {activeTab === 'context' && contextAnalysisTitle && (
-                                    <div className="mb-2 text-sm text-green-400 font-medium">
-                                        {contextAnalysisTitle}
-                                    </div>
-                                )}
-
-                                <div className="h-[500px] w-full overflow-y-auto">
-                                    {activeTab === 'analysis' ? (
-                                        <FileSizeAnalyzer fileSizeData={currentData.fileSizeData} />
-                                    ) : (
-                                        <AnalysisResultContainer result={currentData.result} />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        <OutputSection
+                            activeTab={activeTab}
+                            setActiveTab={setActiveTab}
+                            currentData={currentData}
+                            contextAnalysisResult={contextAnalysisResult}
+                            contextAnalysisTitle={contextAnalysisTitle}
+                            projectPath={projectPath}
+                            isDependencyAnalyzing={isDependencyAnalyzing}
+                            onOpenDependencyGraph={handleOpenDependencyGraph}
+                            onCopyToClipboard={handleCopyToClipboard}
+                        />
                     </div>
 
-                    {/* Prompt Builder - Fixed height to match output */}
-                    <div className={`flex-none ${isModulesPanelCollapsed ? 'w-1/12' : 'w-1/5'}`}>
-                        <div className="bg-gray-800 rounded-lg overflow-hidden">
-                            <div className="p-4">
-                                <div className="h-[500px] overflow-y-auto">
-                                    <LLMPrompts
-                                        projectId={project.id}
-                                        onApplyContextExclusions={handleApplyContextExclusions}
-                                        currentAnalysisResult={currentData.result}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Prompt Builder - Fixed height */}
+                    <PromptBuilder
+                        project={project}
+                        isModulesPanelCollapsed={isModulesPanelCollapsed}
+                        currentData={currentData}
+                        onApplyContextExclusions={handleApplyContextExclusions}
+                    />
                 </div>
             </div>
         </div>

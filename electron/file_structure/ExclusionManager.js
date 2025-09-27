@@ -1,4 +1,4 @@
-// public/electron/file_structure/ExclusionManager.js - FIXED VERSION
+// electron/file_structure/ExclusionManager.js - FIXED VERSION
 
 const path = require('path');
 const { PathUtils } = require('./PathUtils');

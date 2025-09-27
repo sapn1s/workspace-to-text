@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Dialog } from '../../../../../components/common/Dialog';
-import { ChipInput } from './ChipInput';
+import { ChipInput } from '../../ChipInput';
 
 export function ModuleDialog({ module, modules, onSave, onClose }) {
   const [name, setName] = useState(module?.name || '');

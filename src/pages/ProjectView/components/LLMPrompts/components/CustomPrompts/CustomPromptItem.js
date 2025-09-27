@@ -6,7 +6,17 @@ const CustomPromptItem = ({ prompt, onCopy, onEdit, copyStatus, currentAnalysisR
 
   const handleCopyClick = (e) => {
     e.stopPropagation();
-    onCopy(prompt, currentAnalysisResult);
+    
+    if (e.shiftKey) {
+      // Copy just the prompt content
+      const promptOnly = `${prompt.title}\n\n${prompt.prompt}`;
+      window.electron.copyToClipboard(promptOnly);
+      // Trigger copy status for prompt-only copy
+      onCopy(prompt, null); // Pass null to indicate prompt-only copy
+    } else {
+      // Copy prompt + analysis (existing behavior)
+      onCopy(prompt, currentAnalysisResult);
+    }
   };
 
   return (
@@ -35,7 +45,10 @@ const CustomPromptItem = ({ prompt, onCopy, onEdit, copyStatus, currentAnalysisR
                 ? 'bg-blue-600 hover:bg-blue-700' 
                 : 'bg-gray-600 cursor-not-allowed'
             }`}
-            title={canCopy ? "Copy prompt + current analysis" : "Add prompt content to enable copying"}
+            title={canCopy ? 
+              "Copy prompt + analysis • Shift+click for prompt only" : 
+              "Add prompt content to enable copying"
+            }
             disabled={!canCopy}
           >
             <ClipboardIcon className="h-4 w-4" />
