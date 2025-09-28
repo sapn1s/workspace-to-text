@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2025-09-28
+
+### Changed
+- Small UI improvement for module update dialog
+
+### Fixed
+- Pattern adding module fix
+
 ## [2.3.0] - 2025-09-27
 
 ### Added

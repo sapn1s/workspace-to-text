@@ -270,20 +270,41 @@ const FileExplorer = ({
 
     }, [resolvedPatterns, onPatternChange, loadFileStructure, project?.id]);
 
-    // New handler for adding patterns to modules
     const handleAddToModule = useCallback(async (moduleId, pattern) => {
         try {
             console.log(`Adding pattern "${pattern}" to module ${moduleId}`);
 
+            // Get the current module data first
+            const currentModule = await window.electron.modules.get(moduleId);
+
+            if (!currentModule) {
+                throw new Error(`Module with ID ${moduleId} not found`);
+            }
+
             // Split pattern into individual patterns if it contains commas
             const patterns = pattern.split(',').filter(p => p.trim());
 
+            // Add new patterns to the existing ones
+            const existingPatterns = currentModule.patterns || [];
+            const allPatterns = [...existingPatterns];
+
             for (const singlePattern of patterns) {
-                await window.electron.modules.addPattern({
-                    moduleId,
-                    pattern: singlePattern.trim()
-                });
+                const trimmedPattern = singlePattern.trim();
+                if (!allPatterns.includes(trimmedPattern)) {
+                    allPatterns.push(trimmedPattern);
+                }
             }
+
+            // Update the module with the new patterns
+            const updatedModuleData = {
+                id: moduleId,
+                name: currentModule.name,
+                description: currentModule.description || '',
+                patterns: allPatterns,
+                dependencies: currentModule.dependencies || []
+            };
+
+            await window.electron.modules.update(updatedModuleData);
 
             // Notify parent about module changes
             if (onModuleChange) {
