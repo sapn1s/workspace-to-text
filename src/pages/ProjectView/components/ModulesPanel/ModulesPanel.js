@@ -13,25 +13,33 @@ export function ModulesPanel({
     onModuleDelete,
     onModuleChange,
     modules = [],
-    mainProjectId // New prop to pass the main project ID
+    mainProjectId,
+    prefilledModuleData
 }) {
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [editingModule, setEditingModule] = useState(null);
     const [moduleToDelete, setModuleToDelete] = useState(null);
     const [moduleVersions, setModuleVersions] = useState(new Map());
-    const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for forcing updates
+    const [refreshKey, setRefreshKey] = useState(0);
 
+    // Handle prefilled module data from Module Creator
     useEffect(() => {
-        console.log('=== MODULE DEBUG ===');
-        console.log('Current project:', project);
-        console.log('Modules with inclusion states:', modules);
-        console.log('Module inclusion states:', modules.map(m => ({
-            id: m.id,
-            name: m.name,
-            is_included: m.is_included,
-            version_id: project.id
-        })));
-    }, [modules, project.id]);
+        if (prefilledModuleData) {
+            console.log('ModulesPanel: Received prefilled module data:', prefilledModuleData);
+            
+            // Create a new module with the prefilled data
+            const newModule = {
+                id: null, // null ID indicates it's a new module
+                name: prefilledModuleData.name || '',
+                description: prefilledModuleData.description || '',
+                patterns: prefilledModuleData.patterns || [],
+                dependencies: []
+            };
+            
+            setEditingModule(newModule);
+            setShowCreateDialog(false); // Make sure the regular create dialog is closed
+        }
+    }, [prefilledModuleData]);
 
     // Load version-specific module settings
     useEffect(() => {
@@ -42,11 +50,9 @@ export function ModulesPanel({
                 const versionModules = await window.electron.modules.getVersionModules(project.id);
                 const versionMap = new Map();
                 versionModules.forEach(module => {
-                    // Check is_included is not null/undefined before setting
                     if (module.is_included !== undefined && module.is_included !== null) {
                         versionMap.set(module.id, Boolean(module.is_included));
                     } else {
-                        // Default to false if not explicitly set
                         versionMap.set(module.id, false);
                     }
                 });
@@ -68,8 +74,6 @@ export function ModulesPanel({
         try {
             const currentState = moduleVersions.get(moduleId) ?? true;
             const newState = !currentState;
-
-            console.log(`Toggling module ${moduleId} from ${currentState} to ${newState} for version ${project.id}`);
 
             await window.electron.modules.setVersionInclusion({
                 versionId: project.id,
@@ -96,6 +100,7 @@ export function ModulesPanel({
         try {
             await onModuleCreate(moduleData);
             setShowCreateDialog(false);
+            setEditingModule(null);
 
             // Force refresh after creation
             setRefreshKey(prev => prev + 1);
@@ -133,17 +138,17 @@ export function ModulesPanel({
         try {
             // Get fresh module data when opening for edit
             const freshModule = await window.electron.modules.get(module.id);
-            console.log('Opening module for edit with fresh data:', freshModule);
             setEditingModule(freshModule);
+            setShowCreateDialog(false);
         } catch (error) {
             console.error('Error loading fresh module data:', error);
             // Fallback to the passed module data
             setEditingModule(module);
+            setShowCreateDialog(false);
         }
     };
 
     const handleDeleteClick = (module) => {
-        // Now receives the full module object instead of just ID
         setModuleToDelete(module);
     };
 
@@ -172,6 +177,11 @@ export function ModulesPanel({
 
     const closeEditDialog = () => {
         setEditingModule(null);
+    };
+
+    const handleNewModuleClick = () => {
+        setEditingModule(null);
+        setShowCreateDialog(true);
     };
 
     return (
@@ -211,7 +221,7 @@ export function ModulesPanel({
                     </div>
                     {!isCollapsed && (
                         <button
-                            onClick={() => setShowCreateDialog(true)}
+                            onClick={handleNewModuleClick}
                             className="p-1 hover:bg-gray-700 rounded-md"
                             title="Create new module"
                         >
@@ -243,7 +253,7 @@ export function ModulesPanel({
                 )}
             </div>
 
-            {/* Create Dialog */}
+            {/* Create Dialog (empty module) */}
             {showCreateDialog && (
                 <ModuleDialog
                     module={null}
@@ -253,12 +263,12 @@ export function ModulesPanel({
                 />
             )}
 
-            {/* Edit Dialog */}
+            {/* Edit Dialog (existing module or prefilled data) */}
             {editingModule && (
                 <ModuleDialog
                     module={editingModule}
                     modules={modules}
-                    onSave={handleUpdateModule}
+                    onSave={editingModule.id ? handleUpdateModule : handleCreateModule}
                     onClose={closeEditDialog}
                 />
             )}

@@ -8,8 +8,6 @@ export function useModules(projectId, mainProjectId) {
     if (!mainProjectId) return;
 
     try {
-      console.log('Loading modules for main project ID:', mainProjectId);
-
       const modulesList = await window.electron.modules.list(mainProjectId);
 
       // Load patterns for each module
@@ -20,7 +18,6 @@ export function useModules(projectId, mainProjectId) {
         })
       );
 
-      console.log('Loaded', modulesWithPatterns.length, 'modules with patterns:', modulesWithPatterns.map(m => m.patterns).flat());
       setModules(modulesWithPatterns);
     } catch (error) {
       console.error('Error loading modules:', error);

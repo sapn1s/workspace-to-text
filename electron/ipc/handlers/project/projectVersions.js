@@ -10,7 +10,7 @@ class ProjectVersions {
 
     register() {
         ipcMain.handle('project:createVersion', (_, args) => this.createProjectVersion(args));
-        ipcMain.handle('project:getVersions', (_, projectId) => this.getProjectVersions(projectId));
+        ipcMain.handle('project:getVersions', (_, mainProjectId) => this.getProjectVersions(mainProjectId));
         ipcMain.handle('project:deleteVersion', this.deleteVersion.bind(this));
         ipcMain.handle('project:renameVersion', this.renameVersion.bind(this));
         ipcMain.handle('project:moveVersion', this.moveVersion.bind(this));
@@ -137,16 +137,30 @@ class ProjectVersions {
                 return [];
             }
 
-            // Get all direct child versions (no recursion needed)
-            const childVersions = await this.db.allAsync(`
-            SELECT * FROM projects 
-            WHERE parent_id = ?
+            // Get ALL versions in the tree (recursive)
+            const allVersions = await this.db.allAsync(`
+            WITH RECURSIVE project_tree AS (
+                -- Start with direct children of main project
+                SELECT id, name, path, include_patterns, exclude_patterns, 
+                       parent_id, version_name, respect_gitignore, ignore_dotfiles
+                FROM projects 
+                WHERE parent_id = ?
+                
+                UNION ALL
+                
+                -- Recursively get children of children
+                SELECT p.id, p.name, p.path, p.include_patterns, p.exclude_patterns,
+                       p.parent_id, p.version_name, p.respect_gitignore, p.ignore_dotfiles
+                FROM projects p
+                INNER JOIN project_tree pt ON p.parent_id = pt.id
+            )
+            SELECT * FROM project_tree
             ORDER BY id DESC
         `, [mainProjectId]);
 
             // Return main project + all versions
-            const result = [mainProject, ...childVersions];
-            console.log(`Found main project + ${childVersions.length} versions for main project ${mainProjectId}`);
+            const result = [mainProject, ...allVersions];
+            console.log(`Found main project + ${allVersions.length} versions (including nested) for main project ${mainProjectId}`);
             return result;
         } catch (error) {
             console.error('Error getting project versions:', error);

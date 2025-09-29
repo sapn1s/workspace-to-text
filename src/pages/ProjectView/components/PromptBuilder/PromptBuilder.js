@@ -6,7 +6,8 @@ export function PromptBuilder({
     project,
     isModulesPanelCollapsed,
     currentData,
-    onApplyContextExclusions
+    onApplyContextExclusions,
+    onOpenModuleDialog
 }) {
     return (
         <div className={`flex-none ${isModulesPanelCollapsed ? 'w-1/12' : 'w-1/5'}`}>
@@ -17,6 +18,7 @@ export function PromptBuilder({
                             projectId={project.id}
                             onApplyContextExclusions={onApplyContextExclusions}
                             currentAnalysisResult={currentData.result}
+                            onOpenModuleDialog={onOpenModuleDialog}
                         />
                     </div>
                 </div>

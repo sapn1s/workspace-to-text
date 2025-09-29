@@ -28,12 +28,14 @@ export default function ProjectView({
     const [activeTab, setActiveTab] = useState('output');
     const [isModulesPanelCollapsed, setIsModulesPanelCollapsed] = useState(false);
     const [isDependencyAnalyzing, setIsDependencyAnalyzing] = useState(false);
+    const [prefilledModuleData, setPrefilledModuleData] = useState(null);
 
     // Context analysis state
     const [contextAnalysisResult, setContextAnalysisResult] = useState('');
     const [contextFileSizeData, setContextFileSizeData] = useState([]);
     const [contextAnalysisType, setContextAnalysisType] = useState(null);
     const [contextAnalysisTitle, setContextAnalysisTitle] = useState('');
+    
     const {
         modules,
         createModule,
@@ -92,6 +94,23 @@ export default function ProjectView({
             alert('Failed to apply context exclusions: ' + error.message);
         }
     }, [project.id, projectPath, excludePatterns, handleContextAnalysisResult]);
+
+    // Handler for opening module dialog with pre-filled data
+    const handleOpenModuleDialog = useCallback(async (moduleData) => {
+        console.log('Opening module dialog with pre-filled data:', moduleData);
+        setPrefilledModuleData(moduleData);
+    }, []);
+
+    // Clear prefilled data after it's been used
+    useEffect(() => {
+        if (prefilledModuleData) {
+            // Clear after a short delay to ensure ModulesPanel has time to read it
+            const timer = setTimeout(() => {
+                setPrefilledModuleData(null);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [prefilledModuleData]);
 
     const handleVersionUpdated = async () => {
         try {
@@ -345,6 +364,7 @@ export default function ProjectView({
                                 onModuleUpdate={handleModuleUpdate}
                                 onModuleDelete={handleModuleDelete}
                                 onModuleChange={handleModuleChange}
+                                prefilledModuleData={prefilledModuleData}
                             />
                         </div>
                     </div>
@@ -378,6 +398,7 @@ export default function ProjectView({
                         isModulesPanelCollapsed={isModulesPanelCollapsed}
                         currentData={currentData}
                         onApplyContextExclusions={handleApplyContextExclusions}
+                        onOpenModuleDialog={handleOpenModuleDialog}
                     />
                 </div>
             </div>

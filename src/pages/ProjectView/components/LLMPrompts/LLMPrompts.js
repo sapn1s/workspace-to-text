@@ -1,9 +1,16 @@
+// src/pages/ProjectView/components/LLMPrompts/LLMPrompts.js
 import React, { useState, useRef } from 'react';
 import { InformationCircleIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
 import ContextOptimizer from './components/ContextOptimizer/ContextOptimizer';
+import ModuleCreator from './components/ModuleCreator/ModuleCreator';
 import CustomPrompts from './components/CustomPrompts/CustomPrompts';
 
-const LLMPrompts = ({ projectId, onApplyContextExclusions, currentAnalysisResult }) => {
+const LLMPrompts = ({ 
+  projectId, 
+  onApplyContextExclusions, 
+  currentAnalysisResult,
+  onOpenModuleDialog 
+}) => {
   const [showBuiltInInfo, setShowBuiltInInfo] = useState(false);
   const [showCustomInfo, setShowCustomInfo] = useState(false);
   const customPromptsRef = useRef();
@@ -29,11 +36,20 @@ const LLMPrompts = ({ projectId, onApplyContextExclusions, currentAnalysisResult
               <InformationCircleIcon className="h-4 w-4 text-gray-400 hover:text-gray-200" />
             </button>
           </div>
-          <ContextOptimizer
-            projectId={projectId}
-            onApplyContextExclusions={onApplyContextExclusions}
-            currentAnalysisResult={currentAnalysisResult}
-          />
+          
+          <div className="space-y-2">
+            <ContextOptimizer
+              projectId={projectId}
+              onApplyContextExclusions={onApplyContextExclusions}
+              currentAnalysisResult={currentAnalysisResult}
+            />
+            
+            <ModuleCreator
+              projectId={projectId}
+              currentAnalysisResult={currentAnalysisResult}
+              onOpenModuleDialog={onOpenModuleDialog}
+            />
+          </div>
         </div>
 
         {/* Custom Prompts Section */}
@@ -65,10 +81,10 @@ const LLMPrompts = ({ projectId, onApplyContextExclusions, currentAnalysisResult
         </div>
       </div>
 
-      {/* Built-in Prompts Info Modal - Updated with copy exclusions info */}
+      {/* Built-in Prompts Info Modal */}
       {showBuiltInInfo && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-60 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-lg w-full max-w-lg shadow-xl border border-gray-700">
+          <div className="bg-gray-800 rounded-lg w-full max-w-2xl shadow-xl border border-gray-700 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <h3 className="text-lg font-medium text-gray-100 flex items-center">
                 <InformationCircleIcon className="h-5 w-5 text-blue-400 mr-2" />
@@ -82,14 +98,15 @@ const LLMPrompts = ({ projectId, onApplyContextExclusions, currentAnalysisResult
               </button>
             </div>
             
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-6">
+              {/* Context Optimizer Section */}
               <div className="text-gray-200">
                 <h4 className="font-medium text-blue-400 mb-2">Context Optimizer</h4>
                 <p className="text-sm leading-relaxed mb-4">
                   Generate exclude patterns using LLM for irrelevant files from your project context, depending on what feature you're working on.
                 </p>
                 
-                <h4 className="font-medium text-blue-400 mb-2">How to use</h4>
+                <h5 className="font-medium text-gray-300 mb-2 text-sm">How to use:</h5>
                 <ol className="text-sm space-y-2 text-gray-300">
                   <li className="flex">
                     <span className="text-blue-400 mr-2">1.</span>
@@ -109,36 +126,55 @@ const LLMPrompts = ({ projectId, onApplyContextExclusions, currentAnalysisResult
                   </li>
                 </ol>
                 
-                <h4 className="font-medium text-purple-400 mb-2 mt-4">Making exclusions permanent</h4>
-                <div className="text-sm space-y-2 text-gray-300">
-                  <p>To save exclusions permanently:</p>
-                  <ol className="ml-4 space-y-1">
-                    <li className="flex">
-                      <span className="text-purple-400 mr-2">1.</span>
-                      Click the "Copy Exclusions" button
-                    </li>
-                    <li className="flex">
-                      <span className="text-purple-400 mr-2">2.</span>
-                      Paste into Exclude Patterns input
-                    </li>
-                  </ol>
-                </div>
-                
                 <div className="mt-4 p-3 bg-gray-700 rounded-md">
                   <p className="text-xs text-gray-400">
-                    <strong>Note:</strong> Context optimizer creates temporary views - your original patterns stay unchanged unless you manually copy them to permanent patterns.
+                    <strong>Tip:</strong> To save exclusions permanently, click "Copy Exclusions" and paste into the Exclude Patterns input.
                   </p>
                 </div>
               </div>
-              
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={() => setShowBuiltInInfo(false)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm"
-                >
-                  Got it
-                </button>
+
+              {/* Module Creator Section */}
+              <div className="text-gray-200 pt-4 border-t border-gray-700">
+                <h4 className="font-medium text-green-400 mb-2">Module Creator</h4>
+                <p className="text-sm leading-relaxed mb-4">
+                  Get AI suggestions for organizing your codebase into logical, reusable modules based on your project structure.
+                </p>
+                
+                <h5 className="font-medium text-gray-300 mb-2 text-sm">How to use:</h5>
+                <ol className="text-sm space-y-2 text-gray-300">
+                  <li className="flex">
+                    <span className="text-green-400 mr-2">1.</span>
+                    Run project analysis first
+                  </li>
+                  <li className="flex">
+                    <span className="text-green-400 mr-2">2.</span>
+                    Copy the prompt to your LLM
+                  </li>
+                  <li className="flex">
+                    <span className="text-green-400 mr-2">3.</span>
+                    Paste back the JSON response
+                  </li>
+                  <li className="flex">
+                    <span className="text-green-400 mr-2">4.</span>
+                    Click "Copy" to copy patterns or "Create" to open module dialog
+                  </li>
+                </ol>
+                
+                <div className="mt-4 p-3 bg-gray-700 rounded-md">
+                  <p className="text-xs text-gray-400">
+                    <strong>What it suggests:</strong> Feature-level modules (Authentication, Admin Dashboard, etc.) that group 5+ related files. It avoids single config files or overly granular splits.
+                  </p>
+                </div>
               </div>
+            </div>
+            
+            <div className="flex justify-end p-4 border-t border-gray-700">
+              <button
+                onClick={() => setShowBuiltInInfo(false)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm"
+              >
+                Got it
+              </button>
             </div>
           </div>
         </div>
@@ -194,15 +230,15 @@ const LLMPrompts = ({ projectId, onApplyContextExclusions, currentAnalysisResult
                   </p>
                 </div>
               </div>
-              
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={() => setShowCustomInfo(false)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm"
-                >
-                  Got it
-                </button>
-              </div>
+            </div>
+            
+            <div className="flex justify-end p-4 border-t border-gray-700">
+              <button
+                onClick={() => setShowCustomInfo(false)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm"
+              >
+                Got it
+              </button>
             </div>
           </div>
         </div>

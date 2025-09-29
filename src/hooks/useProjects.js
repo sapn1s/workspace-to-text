@@ -1,4 +1,4 @@
-// src/hooks/useProjects.js - Updated with version deletion support
+// src/hooks/useProjects.js - Fixed with proper main project ID calculation
 
 import { useState, useEffect, useRef } from 'react';
 
@@ -9,6 +9,30 @@ export function useProjects() {
   const [projectPath, setProjectPath] = useState('');
   const [mainProjectId, setMainProjectId] = useState(null);
   const isVersionSwitching = useRef(false);
+
+  // Helper function to find the root/main project ID
+  const findMainProjectId = (project, allProjects) => {
+    if (!project) return null;
+    
+    // If project has no parent, it's the main project
+    if (!project.parent_id) {
+      return project.id;
+    }
+    
+    // Traverse up the chain to find the root
+    let current = project;
+    while (current.parent_id) {
+      const parent = allProjects.find(p => p.id === current.parent_id);
+      if (!parent) {
+        // Parent not found, assume current is the root
+        console.warn(`Parent ${current.parent_id} not found, treating ${current.id} as root`);
+        return current.id;
+      }
+      current = parent;
+    }
+    
+    return current.id;
+  };
 
   const loadProjects = async () => {
     const loadedProjects = await window.electron.getProjects();
@@ -26,7 +50,7 @@ export function useProjects() {
 
       // Pass the main project ID directly - no calculation needed
       const allVersions = await window.electron.getProjectVersions(mainProjectId);
-      console.log(`Found ${allVersions.length} total items for main project ${mainProjectId}`);
+      console.log(`Found ${allVersions.length} total items for main project ${mainProjectId}`, allVersions);
 
       setVersions(allVersions);
       return allVersions;
@@ -46,8 +70,9 @@ export function useProjects() {
         setSelectedProject(freshProject);
         setProjectPath(freshProject.path || '');
 
-        // Calculate and store main project ID
-        const calculatedMainProjectId = freshProject.parent_id || freshProject.id;
+        // Find the root/main project ID by traversing up
+        const calculatedMainProjectId = findMainProjectId(freshProject, allProjects);
+        console.log(`Selected project ${freshProject.id}, main project ID: ${calculatedMainProjectId}`);
         setMainProjectId(calculatedMainProjectId);
 
         await loadVersions(calculatedMainProjectId);
@@ -70,8 +95,9 @@ export function useProjects() {
         setProjectPath(freshVersion.path || '');
         setSelectedProject(freshVersion);
 
-        // Calculate and store main project ID
-        const calculatedMainProjectId = freshVersion.parent_id || freshVersion.id;
+        // Find the root/main project ID by traversing up
+        const calculatedMainProjectId = findMainProjectId(freshVersion, allProjects);
+        console.log(`Selected version ${freshVersion.id}, main project ID: ${calculatedMainProjectId}`);
         setMainProjectId(calculatedMainProjectId);
 
         await loadVersions(calculatedMainProjectId);
@@ -99,9 +125,9 @@ export function useProjects() {
           setProjectPath(updatedProject.path || '');
         }
 
-        // Reload versions for the project family
-        const mainProjectId = selectedProject.parent_id || selectedProject.id;
-        await loadVersions(mainProjectId);
+        // Reload versions for the project family using the correct main project ID
+        const calculatedMainProjectId = findMainProjectId(updatedProject || selectedProject, allProjects);
+        await loadVersions(calculatedMainProjectId);
       }
 
       console.log('Version updated successfully');
@@ -126,7 +152,7 @@ export function useProjects() {
     }
   };
 
-  // NEW: Handle version deletion
+  // Handle version deletion
   const handleDeleteVersion = async (mainProjectId) => {
     try {
       // Reload projects to get updated data
@@ -136,13 +162,17 @@ export function useProjects() {
       await loadVersions(mainProjectId);
 
       // If the deleted version was the currently selected one, switch to main project
-      if (selectedProject && selectedProject.parent_id === mainProjectId) {
+      if (selectedProject && selectedProject.parent_id) {
         const allProjects = await window.electron.getProjects();
-        const mainProject = allProjects.find(p => p.id === mainProjectId);
+        
+        // Find the actual main project
+        const calculatedMainProjectId = findMainProjectId(selectedProject, allProjects);
+        const mainProject = allProjects.find(p => p.id === calculatedMainProjectId);
 
         if (mainProject) {
           setSelectedProject(mainProject);
           setProjectPath(mainProject.path || '');
+          setMainProjectId(calculatedMainProjectId);
         }
       }
 
@@ -189,8 +219,12 @@ export function useProjects() {
         // Then update the selected project
         setSelectedProject(newVersion);
 
+        // Find the correct main project ID
+        const calculatedMainProjectId = findMainProjectId(newVersion, allProjects);
+        setMainProjectId(calculatedMainProjectId);
+
         // Then load all versions of this project family
-        await loadVersions(mainProjectId);
+        await loadVersions(calculatedMainProjectId);
       } else {
         console.error("Could not find newly created version with ID:", newVersionId);
         // Reload the versions list as a fallback
