@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TrashIcon, ChevronRightIcon, ExclamationTriangleIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { Dialog } from '../../components/common/Dialog';
 import { RenameProjectDialog } from './components/RenameProject/RenameProjectDialog';
@@ -51,10 +51,18 @@ function DeleteConfirmationDialog({ project, onConfirm, onCancel }) {
   );
 }
 
-function ProjectList({ projects = [], onSelectProject, onDeleteProject, onRenameProject }) {
+function ProjectList({ 
+  projects = [], 
+  onSelectProject, 
+  onDeleteProject, 
+  onRenameProject,
+  selectedIndex = null,
+  mainProjects = []
+}) {
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [projectToRename, setProjectToRename] = useState(null);
+  const selectedRef = useRef(null);
 
   const groupedProjects = projects.reduce((acc, project) => {
     if (!project.parent_id) {
@@ -71,6 +79,18 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject, onRename
     return acc;
   }, {});
 
+  // Auto-expand projects when a version is selected
+  useEffect(() => {
+    // No auto-expand needed since we only navigate main projects
+  }, [selectedIndex, mainProjects]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (selectedRef.current) {
+      selectedRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIndex]);
+
   const toggleExpand = (projectId) => {
     setExpandedProjects(prev => {
       const newSet = new Set(prev);
@@ -84,19 +104,16 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject, onRename
   };
 
   const handleDeleteClick = (project, event) => {
-    event.stopPropagation(); // Prevent triggering project selection
-
-    // Add version count to the project object for the confirmation dialog
+    event.stopPropagation();
     const projectWithVersions = {
       ...project,
       versions: groupedProjects[project.id]?.versions || []
     };
-
     setProjectToDelete(projectWithVersions);
   };
 
   const handleRenameClick = (project, event) => {
-    event.stopPropagation(); // Prevent triggering project selection
+    event.stopPropagation();
     setProjectToRename(project);
   };
 
@@ -116,6 +133,10 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject, onRename
     setProjectToRename(null);
   };
 
+  const isProjectSelected = (project) => {
+    return selectedIndex !== null && mainProjects[selectedIndex]?.id === project.id;
+  };
+
   return (
     <>
       <div className="flex-grow overflow-auto">
@@ -123,17 +144,20 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject, onRename
         <div className="space-y-3">
           {Object.entries(groupedProjects).map(([projectId, { main, versions }]) => {
             if (!main) {
-              console.log('Skipping project - no main project found:', projectId);
               return null;
             }
 
             const isExpanded = expandedProjects.has(main.id);
             const hasVersions = versions.length > 0;
+            const isMainSelected = isProjectSelected(main);
 
             return (
               <div key={projectId} className="bg-gray-800 rounded-lg overflow-hidden">
                 {/* Main Project */}
-                <div className="flex items-center">
+                <div 
+                  ref={isMainSelected ? selectedRef : null}
+                  className={`flex items-center ${isMainSelected ? 'bg-blue-600' : ''}`}
+                >
                   <div className="w-10 flex items-center justify-center">
                     <button
                       onClick={(e) => {
@@ -149,10 +173,8 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject, onRename
                     </button>
                   </div>
                   <button
-                    onClick={() => {
-                      onSelectProject(main);
-                    }}
-                    className="flex-grow px-3 py-3 text-left hover:bg-gray-700"
+                    onClick={() => onSelectProject(main)}
+                    className={`flex-grow px-3 py-3 text-left ${!isMainSelected ? 'hover:bg-gray-700' : ''}`}
                   >
                     <span className="font-medium text-gray-200">
                       {main.name}
@@ -182,8 +204,13 @@ function ProjectList({ projects = [], onSelectProject, onDeleteProject, onRename
                 {isExpanded && versions.length > 0 && (
                   <div className="border-t border-gray-700">
                     {versions.map(version => {
+                      const isVersionSelected = isProjectSelected(version);
                       return (
-                        <div key={version.id} className="flex items-center bg-gray-750 hover:bg-gray-700">
+                        <div 
+                          key={version.id} 
+                          ref={isVersionSelected ? selectedRef : null}
+                          className={`flex items-center ${isVersionSelected ? 'bg-blue-600' : 'bg-gray-750 hover:bg-gray-700'}`}
+                        >
                           <div className="w-10 flex justify-center">
                             <div className="w-px h-full bg-gray-600"></div>
                           </div>

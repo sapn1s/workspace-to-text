@@ -35,7 +35,7 @@ export default function ProjectView({
     const [contextFileSizeData, setContextFileSizeData] = useState([]);
     const [contextAnalysisType, setContextAnalysisType] = useState(null);
     const [contextAnalysisTitle, setContextAnalysisTitle] = useState('');
-    
+
     const {
         modules,
         createModule,
@@ -351,9 +351,9 @@ export default function ProjectView({
                         />
                     </div>
 
-                    {/* Modules Panel - Positioned absolutely so it doesn't affect flex layout */}
-                    <div className={`flex-none relative ${isModulesPanelCollapsed ? 'w-1/12' : 'w-1/5'}`}>
-                        <div className="absolute top-0 right-0 w-full z-5">
+                    {/* Modules Panel - Match height with configuration section */}
+                    <div className={`flex-none ${isModulesPanelCollapsed ? 'w-1/12' : 'w-1/5'}`}>
+                        <div className="h-[700px] overflow-y-auto">
                             <ModulesPanel
                                 project={project}
                                 modules={modules}

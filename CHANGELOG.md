@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.3] - 2025-10-02
+
+### Added
+- Keyboard navigation in main project list page
+
+### Changed
+- Module list no longer infinitely grows, it is restricted max height
+- Other minor UI/UX changes
+- Updated README
+
+### Fixed
+- Module creating not saving patterns
+
 ## [2.3.2] - 2025-09-29
 
 ### Added

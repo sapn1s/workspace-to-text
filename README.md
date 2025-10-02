@@ -1,65 +1,11 @@
 # Workspace to Text (WTT)
 
-A desktop application that converts your project workspace into formatted text output, ideal for documentation, analysis, or AI model input. WTT provides intelligent file filtering, project versioning, and a visual file explorer to help you manage and analyze your codebase.
+A desktop application that converts your project workspace into formatted text output, ideal for documentation, analysis, or AI model input.
 
 ## Screenshots
 
-### Main Projects Page
-<img src="screenshots/main-page.png" width="600" alt="Main Projects Page"/>
-
 ### Project Explorer and Analysis
 <img src="screenshots/project-view.png" width="600" alt="Main Projects Page"/>
-
-### Size Warning Dialog
-<img src="screenshots/size-warning.png" width="600" alt="Main Projects Page"/>
-
-## Features
-
-- **Project Management**
-  - Create and manage multiple projects
-  - Version control for projects with named snapshots
-  - Project-specific settings and configurations
-
-- **File Explorer**
-  - Interactive file tree visualization
-  - Real-time directory scanning
-  - Context menu for quick actions
-  - Visual indicators for excluded files/folders
-
-- **Smart Filtering**
-  - Pattern-based file inclusion/exclusion
-  - Built-in common exclusion patterns
-  - .gitignore integration
-  - Dot-files handling
-
-- **Module System**
-  - Create reusable pattern collections
-  - Share modules across project versions
-  - Module dependencies and hierarchies
-  - Version-specific module toggling
-
-- **Dependency Analysis**
-  - Interactive dependency visualization
-  - Multiple layout options (hierarchical, force-directed, circular)
-  - Node categorization and search functionality
-  - Opens in separate popup windows
-
-- **LLM Prompts Integration**
-  - Context Optimizer for intelligent file exclusion based on feature development
-  - Custom prompt templates for reusable AI interactions
-  - Automatic analysis result integration with prompts
-  - Copy exclusions functionality for permanent pattern application
-
-- **File Analysis**
-  - File size visualization and metrics
-  - Size limit warnings for large projects
-  - Comprehensive file type detection (100+ formats)
-  - Directory size analysis
-
-- **Performance & Safety**
-  - Intelligent memory usage optimization
-  - Tabbed interface for output and analysis
-  - Better handling of large codebases
 
 ## Getting Started
 
@@ -82,7 +28,7 @@ npm install
 npm start
 
 # Build for production
-npm run electron-build
+npm run build
 ```
 
 ## Usage
@@ -99,14 +45,7 @@ npm run electron-build
      - Ignore dot files
    - Set include/exclude patterns
 
-3. **Pattern Configuration**
-   Include specific files:
-   ```
-   src/**/*.js
-   *.tsx
-   components/*.jsx
-   ```
-   
+3. **Pattern Configuration** 
    Exclude directories/files:
    ```
    node_modules
@@ -118,24 +57,19 @@ npm run electron-build
    - Create reusable pattern collections
    - Share modules across project versions
    - Toggle modules per version
-   - Build dependency hierarchies
 
 5. **Version Management**
-   - Create versions to track different states
-   - Switch between versions
-   - Each version maintains its own settings
+   - Create versions to create different context for the same project e.g. "admin dashboard", "frontentd-only", "authentication system"
+   - Each version maintains its own settings and patterns
 
 6. **LLM Prompts**
-   - Use Context Optimizer for feature-focused analysis
+   - Context Optimizer allows more focused context for a feature you want to work on
+   - Module creator provides you with information on how the current context could be split into modules
    - Create custom prompt templates
-   - Copy combined prompt + analysis to AI tools
-   - Apply temporary exclusions based on AI recommendations
 
 7. **Dependency Analysis**
    - Click "Dependencies" to open interactive graph
    - Explore relationships between files
-   - Filter and search dependencies
-   - Multiple visualization layouts
 
 8. **Analysis**
    - Click "Analyze" to process your workspace
@@ -145,10 +79,7 @@ npm run electron-build
    - Pass the output to LLM or whatever is your usecase
 
 ### File Types
-The application automatically detects and processes over 100 text file types including:
-- Source code (.js, .jsx, .ts, .tsx, etc.)
-- Configuration files (.json, .yml, .env, etc.)
-- Documentation (.md, .txt)
-- Web files (.html, .css, .svg)
-- Game development files (.gd, .tscn, .unity)
-- And many more specialized formats
+The application automatically detects and processes text files, including:
+- **Explicitly supported**: Over 100 file types including source code (.js, .jsx, .ts, .tsx), configuration files (.json, .yml, .env), documentation (.md, .txt), web files (.html, .css, .svg), game development files (.gd, .tscn, .unity), and many more
+- **Auto-detected**: Additional text file types detected via MIME type analysis
+- **Excluded**: Binary files (.exe, .dll, .pdf, images, videos, etc.)

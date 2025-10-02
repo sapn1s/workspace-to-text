@@ -82,29 +82,39 @@ class ModuleHandlers {
         try {
             const { mainProjectId, name, description = '', patterns = [], dependencies = [] } = data;
 
-            return await new Promise((resolve, reject) => {
+            // First, insert the module
+            const moduleId = await new Promise((resolve, reject) => {
                 this.db.run(
                     'INSERT INTO modules (project_id, name, description) VALUES (?, ?, ?)',
                     [mainProjectId, name, description],
                     function (err) {
                         if (err) reject(err);
-
-                        const moduleId = this.lastID;
-
-                        // Insert patterns if any
-                        if (patterns.length > 0) {
-                            // Add pattern insertion logic here
-                        }
-
-                        // Insert dependencies if any  
-                        if (dependencies.length > 0) {
-                            // Add dependency insertion logic here
-                        }
-
-                        resolve(moduleId);
+                        else resolve(this.lastID);
                     }
                 );
             });
+
+            // Then insert patterns
+            if (patterns.length > 0) {
+                for (const pattern of patterns) {
+                    await this.db.runAsync(
+                        'INSERT INTO module_patterns (module_id, pattern) VALUES (?, ?)',
+                        [moduleId, pattern]
+                    );
+                }
+            }
+
+            // Then insert dependencies
+            if (dependencies.length > 0) {
+                for (const depId of dependencies) {
+                    await this.db.runAsync(
+                        'INSERT INTO module_dependencies (parent_module_id, child_module_id) VALUES (?, ?)',
+                        [moduleId, depId]
+                    );
+                }
+            }
+
+            return moduleId;
         } catch (error) {
             console.error('Error creating module:', error);
             throw error;

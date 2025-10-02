@@ -15,7 +15,7 @@ export function NewProject({ onCreateProject }) {
 
   return (
     <div className="space-y-4 mb-6">
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 max-w-md">
         <input
           type="text"
           value={newProjectName}
